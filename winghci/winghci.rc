@@ -72,6 +72,7 @@ BEGIN
     "8",            ID_TOOLS_TOOL8,         VIRTKEY, CONTROL, NOINVERT
     "9",            ID_TOOLS_TOOL9,         VIRTKEY, CONTROL, NOINVERT
     "M",            ID_RUN,                 VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_CLEARSCREEN,         VIRTKEY, CONTROL, NOINVERT
 END
 
 
@@ -80,7 +81,7 @@ END
 // Dialog
 //
 
-DLG_MAIN DIALOGEX 0, 0, 445, 257
+DLG_MAIN DIALOGEX 0, 0, 500, 300
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_ACCEPTFILES | WS_EX_APPWINDOW
 CAPTION "WinGhci"
@@ -116,7 +117,7 @@ BEGIN
     COMBOBOX        IDC_GHCI_Combo_Editor,43,116,293,65,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_GHCI_Combo_Prompt,43,136,293,65,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Editor:",IDC_STATIC,15,119,24,10
-    CONTROL         "",IDC_RtfPreview,"RichEdit20W",ES_CENTER | ES_AUTOHSCROLL | ES_READONLY,13,50,325,22,WS_EX_STATICEDGE
+    CONTROL         "",IDC_RtfPreview,"RichEdit20W",0x881,13,50,325,22,WS_EX_STATICEDGE
     GROUPBOX        "GHCI Options",IDC_STATIC,7,83,337,119
     CONTROL         "Revert top-level expressions after each evaluation",IDC_ChkRevertCAFs,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,154,179,10
@@ -218,7 +219,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Delete\tDel",                 ID_DELETE
         MENUITEM "Select All",                  ID_SELECTALL
-        MENUITEM "Clear Screen",                ID_CLEARSCREEN
+        MENUITEM "Clear Screen\tCtrl+S",        ID_CLEARSCREEN
         MENUITEM SEPARATOR
         MENUITEM "Previous line\t&Up arrow",    ID_GOPREVIOUS
         MENUITEM "Next line\t&Down arrow",      ID_GONEXT

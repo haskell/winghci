@@ -9,8 +9,19 @@
 #include "CommonIncludes.h"
 
 
+// Converts a null terminated unicode string to current system Windows ANSI code page
+BOOL UnicodeToLocalCodePage(const WCHAR *WCharsIn, BYTE *BytesOut, INT maxBytes, INT *bytesOut)
+{
+
+	(*bytesOut) = WideCharToMultiByte( CP_ACP, 0, WCharsIn, -1,
+										BytesOut, maxBytes, NULL, NULL );
+
+	(*bytesOut)--;
+
+	return TRUE;
+}
+
 // Converts a null terminated unicode string to utf8
-// Returns result in a heap allocated string
 BOOL UnicodeToUtf8(const WCHAR *WCharsIn, BYTE *BytesOut, INT maxBytes, INT *bytesOut)
 {
     WCHAR* w;

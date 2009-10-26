@@ -370,9 +370,12 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 			SHORT n = GetKeyState(VK_CONTROL);
 			BOOL Control = (n & (1 << 16));
 
-			if(((CHAR)(mf->wParam) ==(CHAR)TEXT('C')) && Control)
-				AbortExecution();
-			else if (History && (mf->lParam & (1 << 24))) {
+			if(((CHAR)(mf->wParam) ==(CHAR)TEXT('C')) && Control) {
+				if(RtfWindowCanCutCopy() && DROPEFFECT_COPY)
+					RtfWindowClipboard(WM_COPY);
+				else
+					AbortExecution();
+			} else if (History && (mf->lParam & (1 << 24))) {
 				CHARRANGE cr;
 				SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
 				if ((DWORD) cr.cpMin >= StartOfInput) {
@@ -790,7 +793,7 @@ INT winGhciColor(INT Color)
     FormatChanged = TRUE;
     //NowFormat = DefFormat;
     NowFormat.ForeColor = Color;
-    InEscBuf = FALSE;
+    // InEscBuf = FALSE;
 	UpdateFormat();
 
     return PrevColor;
@@ -803,7 +806,7 @@ BOOL winGhciBold(BOOL Bold)
     //NowFormat = DefFormat;
     NowFormat.Bold = Bold;
 
-    InEscBuf = FALSE;
+    // InEscBuf = FALSE;
 	UpdateFormat();
 
     return PrevBold;

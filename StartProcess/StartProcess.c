@@ -42,9 +42,11 @@ INT wmain(INT argc, TCHAR *argv[], TCHAR *envp[])
 	StringCpy(Buffer,argv[1]);
 	for(i=2;i<argc;i++) {
 		StringCat(Buffer, TEXT(" "));
+		if(i==2)
+			StringCat(Buffer, TEXT("\""));
 		StringCat(Buffer,argv[i]);
 	}
-
+	StringCat(Buffer, TEXT("\""));
 
 	 // Spawn process 
 	 f = CreateProcess(NULL, Buffer, NULL, NULL, TRUE, 

@@ -22,7 +22,7 @@
 
 #include <locale.h>
 
-#define BUFFER_MAXLEN			64
+#define BUFFER_MAXLEN			128
 #define UNICODE_BUFFER_MAXLEN	5*BUFFER_MAXLEN
 
 HANDLE hChildStdinRd, hChildStdinWr, hChildStderrWr, hChildStderrRd, 
@@ -207,11 +207,15 @@ VOID SendToGHCIStdinExt(LPCTSTR Str, BOOL SendNewline)
 	INT Utf8BytesLen;
 	DWORD BytesWritten;
 
-    UnicodeToUtf8(Str, Utf8Bytes, UTF8_MAXLEN, &Utf8BytesLen);
+    //UnicodeToUtf8(Str, Utf8Bytes, UTF8_MAXLEN, &Utf8BytesLen);
+	UnicodeToLocalCodePage(Str, Utf8Bytes, UTF8_MAXLEN, &Utf8BytesLen);
+
 	WriteFile(hChildStdinWr, Utf8Bytes, Utf8BytesLen, &BytesWritten, NULL); 
 
 	if(SendNewline) {
-		UnicodeToUtf8(TEXT("\r\n"), Utf8Bytes, UTF8_MAXLEN, &Utf8BytesLen);
+		//UnicodeToUtf8(TEXT("\r\n"), Utf8Bytes, UTF8_MAXLEN, &Utf8BytesLen);
+		UnicodeToLocalCodePage(TEXT("\r\n"), Utf8Bytes, UTF8_MAXLEN, &Utf8BytesLen);
+
 		WriteFile(hChildStdinWr, Utf8Bytes, Utf8BytesLen, &BytesWritten, NULL); 
 	}
 

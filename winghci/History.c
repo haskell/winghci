@@ -10,7 +10,7 @@
 #include "Registry.h"
 #include "Strings.h"
 
-#define MAX_HISTORY 100
+#define MAX_HISTORY 150
 
 LPTSTR History[MAX_HISTORY];
 INT nextSlot, // 0 <= nextSlot < MAX_HISTORY
@@ -19,6 +19,7 @@ INT nextSlot, // 0 <= nextSlot < MAX_HISTORY
 
 #define lastItemCursor	(historySize-1)
 #define AdvanceNextSlot (nextSlot = (nextSlot + 1) % MAX_HISTORY)
+#define BackwardNextSlot (nextSlot = (nextSlot == 0 ?  MAX_HISTORY : nextSlot) - 1)
 
 
 
@@ -53,27 +54,57 @@ INT GetSlot(INT Pos)
 }
 
 
+INT HistoryFind(LPCTSTR Item)
+{
+	INT i;
 
+	for(i=historySize-1; i>=0; i--)
+			if (StringCmp(Item, History[GetSlot(i)]) == 0)
+					return i;
+	return -1;
+}
+
+
+// pre:  0 <= Pos < historySize
+VOID RemoveHistory(INT Pos)
+{	INT i, slot = GetSlot(Pos);
+	free(History[slot]);
+ 
+	for(i=Pos;i<historySize-1;i++)
+		History[GetSlot(i)] = History[GetSlot(i+1)];
+  
+   historySize--;
+   BackwardNextSlot;
+}
 
 VOID AddHistory(LPCTSTR Item)
 {
+	INT previousPos;
+
 	if ( (StringCmp(Item, BlankLine) == 0) // no input
 		||
 		((historySize>0) && (StringCmp(Item, History[GetSlot(lastItemCursor)]) == 0)) // repeated input
 		) {
 		;
-	} else if (historySize<MAX_HISTORY) {
-		historySize++;
-		History[nextSlot] = StringDup(Item);
-		AdvanceNextSlot;
-
 	} else {
-		free(History[nextSlot]);
-		History[nextSlot] = StringDup(Item);
-		AdvanceNextSlot;		
+		previousPos=HistoryFind(Item);
+		if(previousPos>=0) 	 // already in history
+			RemoveHistory(previousPos);	
+
+		if (historySize<MAX_HISTORY) {
+			historySize++;
+			History[nextSlot] = StringDup(Item);
+			AdvanceNextSlot;
+		} else {
+			free(History[nextSlot]);
+			History[nextSlot] = StringDup(Item);
+			AdvanceNextSlot;		
+		}		
 	}
+
 	cursor = lastItemCursor;	
 }
+
 
 
 

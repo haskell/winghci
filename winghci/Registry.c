@@ -11,6 +11,7 @@
 #include "CommonIncludes.h"
 #include "General.h"
 #include "Strings.h"
+#include "WndMain.h"
 
 
 LPTSTR winGhciRegRoot = TEXT("SOFTWARE\\Haskell\\WinGhci ") WINGHCI_VERSION_STRING TEXT("\\");
@@ -219,6 +220,7 @@ VOID RegistryReadWindowPos(HWND hWnd)
 
     if (x == -1) return;
 
+	MainSize(hWnd,cx,cy);
     MoveWindow( hWnd, x, y, cx, cy, TRUE);
 	
 }

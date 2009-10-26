@@ -4,6 +4,9 @@
 import Monad
 import System.Win32
 import Graphics.Win32.Misc
+import Graphics.Win32
+import Bits
+import Maybe
 
 createKey key path sam
  = regCreateKeyEx key path "" rEG_OPTION_NON_VOLATILE sam Nothing
@@ -44,7 +47,7 @@ getWinGhciPath =
 
 
 main =
- do resp <- messageBox nullPtr "Dou you want to associate haskell files with WinGhci?" "WinGhci" mB_YESNO
+ do resp <- messageBox nullPtr "Dou you want to associate haskell files with WinGhci?" "WinGhci" (mB_YESNO .|. mB_SYSTEMMODAL)
     when (resp==iDYES) $
      do
       regExt haskellScript ".hs" "Haskell Script"
@@ -53,6 +56,6 @@ main =
       regExt haskellLiterateScript ".lhs" "Literate Haskell Script"
       writeHKCRString ".lhs\\ShellNew" "" ""
 
-      messageBox nullPtr "Haskell files have been associated with WinGhci" "WinGhci" mB_OK
+      messageBox nullPtr "Haskell files have been associated with WinGhci" "WinGhci" (mB_OK .|. mB_SYSTEMMODAL)
       return ()
 

@@ -61,6 +61,9 @@ INT wmain(INT argc, TCHAR *argv[], TCHAR *envp[])
 
 	 // set system code page
 	 SetConsoleOutputCP(GetACP());
+	 SetConsoleCP(GetACP());
+
+
 
 	 ZeroMemory( &si, sizeof(STARTUPINFO) );
      ZeroMemory( &pi, sizeof(PROCESS_INFORMATION) );

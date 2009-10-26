@@ -8,4 +8,4 @@
 
 #include "resource.h"
 
-#define WINGHCI_VERSION_STRING TEXT("1.0")
+#define WINGHCI_VERSION_STRING TEXT("1.0.2")
