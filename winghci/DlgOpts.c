@@ -104,12 +104,27 @@ VOID MakeGhciEditorCommand(LPTSTR Editor, LPTSTR Command)
 	wsprintf(Command,TEXT(":set editor %s"), Editor);
 }
 
+
+
 VOID MakeGhciExpandedEditorCommand(LPTSTR Editor, LPTSTR Command)
 {
+	TCHAR ShortEditor[MAX_PATH], StartProcess[MAX_PATH], ShortStartProcess[MAX_PATH];
+
+	
+
 	if(Editor[0]==TEXT('&')) {
-		wsprintf(Command,TEXT(":set editor \"%sStartProcess\" %s"), GetWinGhciInstallDir(), &Editor[1]);
-	} else 
-		wsprintf(Command,TEXT(":set editor \"%s\""), Editor);
+		wsprintf(StartProcess, TEXT("%sStartProcess.exe"), GetWinGhciInstallDir());
+	    AsShortFileName(StartProcess, ShortStartProcess, MAX_PATH);
+
+		AsShortFileName(&Editor[1],ShortEditor,MAX_PATH);
+		wsprintf(Command, TEXT(":set editor %s %s"), ShortStartProcess, ShortEditor);
+
+	} else {
+		AsShortFileName(Editor,ShortEditor,MAX_PATH);
+		wsprintf(Command, TEXT(":set editor %s"), ShortEditor);
+	}
+	//MessageBox(NULL,ShortEditor,TEXT("pp"),MB_OK);
+	//MessageBox(NULL,Command,TEXT("pp"),MB_OK);
 }
 
 
@@ -353,7 +368,7 @@ VOID InitOptions(VOID)
 								 , TEXT("ghc --interactive"));
 	GHCI_Combo_Editor = NewCombo( TEXT("GHCI_EDITOR_COMBO")
 		                        , IDC_GHCI_Combo_Editor
-								, TEXT("notepad"));
+								, TEXT("&notepad"));
 	GHCI_Combo_Prompt = NewCombo( TEXT("GHCI_PROMPT_COMBO")
 		                        , IDC_GHCI_Combo_Prompt
 								, TEXT("%s>"));

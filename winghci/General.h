@@ -12,5 +12,7 @@ VOID SetWorkingDirToFileLoc(LPCTSTR FileName, BOOL doCD);
 VOID ErrorExit(LPTSTR lpszFunction);
 LPTSTR GetGhcInstallDir(VOID);
 LPTSTR GetWinGhciInstallDir(VOID);
+VOID AsShortFileName(LPTSTR FileName, LPTSTR ShortFileName, DWORD ShortFileNameSz);
+
 
 TCHAR *ExpandFileName(LPTSTR str);

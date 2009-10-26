@@ -315,3 +315,11 @@ TCHAR *ExpandFileName(LPTSTR str)
 
 	return ExpandFileNameBuff;
 }
+
+
+VOID AsShortFileName(LPTSTR FileName, LPTSTR ShortFileName, DWORD ShortFileNameSz)
+{
+	if(!GetShortPathName(FileName,ShortFileName,ShortFileNameSz))
+		StringCpy(ShortFileName,FileName);
+
+}
