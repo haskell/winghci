@@ -1,6 +1,0 @@
-WinGhci has been written by Pepe Gallardo ("pepeg" ++ "@" ++ "lcc.uma.es")
-
-
-Acknowledgements:
-Much of the code in WinGhci was taken from the Winhugs project. Many thanks
-to Neil Mitchell for giving us permission to use his code.
