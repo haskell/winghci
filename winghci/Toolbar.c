@@ -1,7 +1,7 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
-	Toolbar.c: WinGhci toolbar
+	Toolbar.c: WinGHCi toolbar
 
 	Original code taken from Winhugs (http://haskell.org/hugs)
 
@@ -10,7 +10,7 @@
 
 #include "CommonIncludes.h"
 #include "resource.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 INT Buttons[] = {
     // -1 is a separator, 0 is the end

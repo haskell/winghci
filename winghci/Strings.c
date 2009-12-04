@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	Strings.c: Some String utilities
 

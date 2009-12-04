@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	DlgAbout.c: About dialog code
 
@@ -10,13 +10,13 @@
 
 #include "CommonIncludes.h"
 #include "General.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 
 const INT BmpTransparent = RGB(255,0,255);
 
 LPCTSTR AboutText = 
-    TEXT("WinGhci %s\n")
+    TEXT("WinGHCi %s\n")
 	TEXT("http://code.google.com/p/winghci\n")
 	TEXT("Pepe Gallardo, 2009\n")
     TEXT("\n")
@@ -25,7 +25,7 @@ LPCTSTR AboutText =
     TEXT("\n")
 
 	TEXT("Acknowledgements\n")
-	TEXT("WinGhci is closely based on Winhugs code\n")
+	TEXT("WinGHCi is closely based on Winhugs code\n")
     TEXT("http://www.haskell.org/hugs\n");
 
 
@@ -67,7 +67,7 @@ INT_PTR CALLBACK AboutDlgProc(HWND hDlg, UINT Msg, WPARAM wParam, LPARAM lParam)
 	    DeleteObject(hBmp);
 
 	    SendMessage(hRTF, EM_AUTOURLDETECT, TRUE, 0);
-		wsprintf(Text,AboutText,WINGHCI_VERSION_STRING);
+		wsprintf(Text,AboutText,WinGHCi_VERSION_STRING);
 	    SetWindowText(hRTF, Text);
 
 	    SendMessage(hRTF, EM_SETEVENTMASK, 0, ENM_LINK);

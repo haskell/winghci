@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	General.c: Assorted utility functions
 
@@ -13,35 +13,35 @@
 #include "Registry.h"
 #include "Strings.h"
 #include "WndMain.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 
 
-LPTSTR GetGhcInstallDir(VOID)
+LPTSTR GetGHCinstallDir(VOID)
 {
-	static TCHAR GhcInstallDir[MAX_PATH] = TEXT("");
+	static TCHAR GHCinstallDir[MAX_PATH] = TEXT("");
 	#define GHC_REG TEXT("SOFTWARE\\Haskell\\GHC")
 
-	if(StringIsEmpty(GhcInstallDir)){
+	if(StringIsEmpty(GHCinstallDir)){
 		LPTSTR res = readRegString(HKEY_CURRENT_USER, GHC_REG, TEXT("InstallDir"), TEXT(""));
-		StringCpy(GhcInstallDir, res);
+		StringCpy(GHCinstallDir, res);
 		free(res);
 	}
-	return GhcInstallDir;
+	return GHCinstallDir;
 }
 
-LPTSTR GetWinGhciInstallDir(VOID)
+LPTSTR GetWinGHCiInstallDir(VOID)
 {
-	static TCHAR WinGhciInstallDir[MAX_PATH] = TEXT("");
+	static TCHAR WinGHCiInstallDir[MAX_PATH] = TEXT("");
 	TCHAR currentExe[MAX_PATH], Drive[_MAX_DRIVE], Dir[MAX_PATH];
 
-	if(StringIsEmpty(WinGhciInstallDir)){
+	if(StringIsEmpty(WinGHCiInstallDir)){
 		GetModuleFileName(NULL, currentExe, MAX_PATH);
 
 		_tsplitpath (currentExe, Drive, Dir, NULL, NULL);
-		wsprintf(WinGhciInstallDir,TEXT("%s%s"),Drive,Dir);
+		wsprintf(WinGHCiInstallDir,TEXT("%s%s"),Drive,Dir);
 	}
-	return WinGhciInstallDir;
+	return WinGHCiInstallDir;
 
 	//MessageBox(NULL,path,path,MB_OK);
 
@@ -195,7 +195,7 @@ VOID ExecuteFileDocs(LPTSTR FileName)
 
 	TCHAR Buffer[MAX_PATH];
 
-	wsprintf(Buffer,TEXT("%s\\doc\\%s"),GetGhcInstallDir(),FileName);
+	wsprintf(Buffer,TEXT("%s\\doc\\%s"),GetGHCinstallDir(),FileName);
 	ExecuteFile(Buffer); 
 	
 }
@@ -237,7 +237,7 @@ BOOL ShowOpenFileDialog(HWND hParent, LPTSTR FileName)
     memset(&ofn, 0, sizeof(ofn));
     ofn.lStructSize = sizeof(OPENFILENAME);
     ofn.hInstance = hThisInstance;
-    ofn.hwndOwner = hWndToolbar; //this is a hack to avoid the rich text control getting all its contents selected
+    ofn.hwndOwner = hParent; 
     ofn.lpstrFilter = TEXT("Haskell Files (*.hs;*.lhs)\0*.hs;*.lhs\0All Files (*.*)\0*.*\0");
     ofn.nFilterIndex = 1;
     ofn.lpstrFile= FileName;

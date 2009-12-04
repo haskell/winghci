@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	DlgOpts.c: options dialog code
 
@@ -16,16 +16,16 @@
 #include "RtfWindow.h"
 #include "Strings.h"
 #include "WndMain.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 
 #define MAX_STRING 3*MAX_PATH
 
 
 
-BOOL GHCI_Flag_RevertCAFs, GHCI_Flag_PrintStats, GHCI_Flag_PrintTypes;
+BOOL GHCi_Flag_RevertCAFs, GHCi_Flag_PrintStats, GHCi_Flag_PrintTypes;
 
-COMBO GHCI_Combo_Startup,  GHCI_Combo_Editor, GHCI_Combo_Prompt;
+COMBO GHCi_Combo_Startup,  GHCi_Combo_Editor, GHCi_Combo_Prompt;
 
 
 
@@ -42,20 +42,20 @@ VOID SetDlgItemBool(HWND hDlg, INT CtrlID, BOOL Value)
 
 typedef struct {
 	BOOL	*FlagState;
-	LPTSTR	GhciText;
+	LPTSTR	GHCiText;
 	INT		CtrlID;
 } FLAG;
 
 
 FLAG flags[] = 
-	{ {&GHCI_Flag_RevertCAFs, TEXT("r"), IDC_ChkRevertCAFs}
-    , {&GHCI_Flag_PrintStats, TEXT("s"), IDC_ChkPrintStats}
-	, {&GHCI_Flag_PrintTypes, TEXT("t"), IDC_ChkPrintTypes}
+	{ {&GHCi_Flag_RevertCAFs, TEXT("r"), IDC_ChkRevertCAFs}
+    , {&GHCi_Flag_PrintStats, TEXT("s"), IDC_ChkPrintStats}
+	, {&GHCi_Flag_PrintTypes, TEXT("t"), IDC_ChkPrintTypes}
 	, {NULL,NULL,0}
     };
 
 
-#define FLAG_REGISTRY_PREFFIX	TEXT("GHCI_FLAG_")
+#define FLAG_REGISTRY_PREFFIX	TEXT("GHCi_FLAG_")
 
 
 
@@ -65,14 +65,14 @@ VOID ReadOptionsFromRegistry(VOID)
  TCHAR Buffer[1024];
  
  for(fs=flags; fs->FlagState != NULL; fs++) {
-	 wsprintf(Buffer, TEXT("%s%s"), FLAG_REGISTRY_PREFFIX, fs->GhciText);
+	 wsprintf(Buffer, TEXT("%s%s"), FLAG_REGISTRY_PREFFIX, fs->GHCiText);
 	 *(fs->FlagState) = (BOOL) readRegInt(Buffer, FALSE);
  }
 
 
- ReadComboFromRegistry(GHCI_Combo_Startup);
- ReadComboFromRegistry(GHCI_Combo_Editor);
- ReadComboFromRegistry(GHCI_Combo_Prompt);
+ ReadComboFromRegistry(GHCi_Combo_Startup);
+ ReadComboFromRegistry(GHCi_Combo_Editor);
+ ReadComboFromRegistry(GHCi_Combo_Prompt);
 
 }
 
@@ -83,37 +83,37 @@ VOID WriteOptions2Registry(VOID)
  TCHAR Buffer[1024];
  
  for(fs=flags; fs->FlagState != NULL; fs++) {
-	 wsprintf(Buffer, TEXT("%s%s"), FLAG_REGISTRY_PREFFIX, fs->GhciText);
+	 wsprintf(Buffer, TEXT("%s%s"), FLAG_REGISTRY_PREFFIX, fs->GHCiText);
 	 writeRegInt(Buffer, *(fs->FlagState));
  }
 
 
- WriteCombo2Registry(GHCI_Combo_Startup);
- WriteCombo2Registry(GHCI_Combo_Editor);
- WriteCombo2Registry(GHCI_Combo_Prompt);
+ WriteCombo2Registry(GHCi_Combo_Startup);
+ WriteCombo2Registry(GHCi_Combo_Editor);
+ WriteCombo2Registry(GHCi_Combo_Prompt);
 }
 
 
-VOID MakeGhciFlagCommand(FLAG *f, LPTSTR Command)
+VOID MakeGHCiFlagCommand(FLAG *f, LPTSTR Command)
 {
-	wsprintf(Command,TEXT(":%s +%s"),*(f->FlagState) ? TEXT("set") : TEXT("unset"), f->GhciText);
+	wsprintf(Command,TEXT(":%s +%s"),*(f->FlagState) ? TEXT("set") : TEXT("unset"), f->GHCiText);
 }
 
-VOID MakeGhciEditorCommand(LPTSTR Editor, LPTSTR Command)
+VOID MakeGHCiEditorCommand(LPTSTR Editor, LPTSTR Command)
 {
 	wsprintf(Command,TEXT(":set editor %s"), Editor);
 }
 
 
 
-VOID MakeGhciExpandedEditorCommand(LPTSTR Editor, LPTSTR Command)
+VOID MakeGHCiExpandedEditorCommand(LPTSTR Editor, LPTSTR Command)
 {
 	TCHAR ShortEditor[MAX_PATH], StartProcess[MAX_PATH], ShortStartProcess[MAX_PATH];
 
 	
 
 	if(Editor[0]==TEXT('&')) {
-		wsprintf(StartProcess, TEXT("%sStartProcess.exe"), GetWinGhciInstallDir());
+		wsprintf(StartProcess, TEXT("%sStartProcess.exe"), GetWinGHCiInstallDir());
 	    AsShortFileName(StartProcess, ShortStartProcess, MAX_PATH);
 
 		AsShortFileName(&Editor[1],ShortEditor,MAX_PATH);
@@ -123,12 +123,10 @@ VOID MakeGhciExpandedEditorCommand(LPTSTR Editor, LPTSTR Command)
 		AsShortFileName(Editor,ShortEditor,MAX_PATH);
 		wsprintf(Command, TEXT(":set editor %s"), ShortEditor);
 	}
-	//MessageBox(NULL,ShortEditor,TEXT("pp"),MB_OK);
-	//MessageBox(NULL,Command,TEXT("pp"),MB_OK);
 }
 
 
-VOID MakeGhciPromptCommand(LPTSTR Prompt, LPTSTR Command, BOOL AddMarkers) 
+VOID MakeGHCiPromptCommand(LPTSTR Prompt, LPTSTR Command, BOOL AddMarkers) 
 {
 	#define SETPROMPT TEXT(":set prompt %s%s%s")
 	wsprintf(Command,SETPROMPT,AddMarkers ? BEGIN_OF_PROMPT : TEXT(""),Prompt,AddMarkers ? END_OF_PROMPT : TEXT(""));
@@ -141,21 +139,35 @@ VOID UpdateOptions(HWND hDlg)
   FLAG *fs;
   TCHAR Buffer[3*MAX_PATH];
 
-  if(ComboHasChanged(hDlg,GHCI_Combo_Startup)) {
+  if(ComboHasChanged(hDlg,GHCi_Combo_Startup)) {
 	  INT resp = MessageBox( hDlg
-		                   , TEXT("GHCI startup has changed. The interpreter must be initialized. Do you want to proceed?")
-						   , TEXT("WinGhci"), MB_YESNO|MB_ICONQUESTION);
+		                   , TEXT("GHCi startup has changed. The interpreter must be initialized. Do you want to proceed?")
+						   , TEXT("WinGHCi"), MB_YESNO|MB_ICONQUESTION);
 
 	  if(resp==IDYES) {
-		ComboUpdate(hDlg,GHCI_Combo_Startup);
-		SetEvent(hKillGHCI);
+        RtfWindowPutS(TEXT("\n"));
+		ComboGetDlgText(hDlg, GHCi_Combo_Startup, Buffer, 3*MAX_PATH);
+		
+		SetEvent(hKillGHCi);
 		//pause StdoutPrinterThread thread
 		SignalObjectAndWait(hSigSuspendStdoutPrinterThread
 			               ,hSigStdoutPrinterThreadSuspended, INFINITE, FALSE);
 
-		CreateGHCIProcess();
-		Sleep(100);
+		if (CreateGHCiProcess(Buffer)) {		
+            ComboUpdate(hDlg,GHCi_Combo_Startup);
+		} else {
+			TCHAR ErrorMsg[3*MAX_PATH];
+			wsprintf( ErrorMsg,TEXT("GHCi could not be initialized as follows:\n %s\n\nIt will be restarted using the previous configuration:\n %s")
+				    , Buffer, ComboGetValue(GHCi_Combo_Startup)
+				);
+			MessageBox( hDlg
+		              , ErrorMsg
+					  , TEXT("WinGHCi"), MB_OK|MB_ICONSTOP);
+			CreateGHCiProcess(ComboGetValue(GHCi_Combo_Startup));
+		}
+
 		// resume StdoutPrinterThread
+		Sleep(100);
 		SetEvent(hSigResumeStdoutPrinterThread);
 	  }	
   }
@@ -169,51 +181,51 @@ VOID UpdateOptions(HWND hDlg)
 	 *(fs->FlagState) = newState;
 
 	 if(hasChanged) {
-		MakeGhciFlagCommand(fs,Buffer);
+		MakeGHCiFlagCommand(fs,Buffer);
 		FireCommand(Buffer);
 	 }
  }
 
  // update editor	
- if(ComboHasChanged(hDlg,GHCI_Combo_Editor)) {
-	 ComboUpdate(hDlg,GHCI_Combo_Editor);
-	 MakeGhciEditorCommand(ComboGetValue(GHCI_Combo_Editor), Buffer);
+ if(ComboHasChanged(hDlg,GHCi_Combo_Editor)) {
+	 ComboUpdate(hDlg,GHCi_Combo_Editor);
+	 MakeGHCiEditorCommand(ComboGetValue(GHCi_Combo_Editor), Buffer);
 	 FireCommand(Buffer);
  }
 
 
  //update prompt
- if(ComboHasChanged(hDlg,GHCI_Combo_Prompt)) {
-	 ComboUpdate(hDlg,GHCI_Combo_Prompt);
-	 MakeGhciPromptCommand(ComboGetValue(GHCI_Combo_Prompt), Buffer, FALSE);
+ if(ComboHasChanged(hDlg,GHCi_Combo_Prompt)) {
+	 ComboUpdate(hDlg,GHCi_Combo_Prompt);
+	 MakeGHCiPromptCommand(ComboGetValue(GHCi_Combo_Prompt), Buffer, FALSE);
 	 FireCommand(Buffer);
  }
 
 
 }
 
-VOID SendOptions2GHCI(VOID)
+VOID SendOptions2GHCi(VOID)
 {
 	FLAG *fs;
 	TCHAR Buffer[1024];
 
 	for(fs = flags; fs->FlagState != NULL; fs++) {
-		MakeGhciFlagCommand(fs,Buffer);
-		SendToGHCIStdinLn(Buffer);
+		MakeGHCiFlagCommand(fs,Buffer);
+		SendToGHCiStdinLn(Buffer);
 	}
 
-	MakeGhciExpandedEditorCommand(ComboGetValue(GHCI_Combo_Editor), Buffer);
-	SendToGHCIStdinLn(Buffer);
+	MakeGHCiExpandedEditorCommand(ComboGetValue(GHCi_Combo_Editor), Buffer);
+	SendToGHCiStdinLn(Buffer);
 	 
-	MakeGhciPromptCommand(ComboGetValue(GHCI_Combo_Prompt), Buffer, TRUE);
-	SendToGHCIStdinLn(Buffer);
+	MakeGHCiPromptCommand(ComboGetValue(GHCi_Combo_Prompt), Buffer, TRUE);
+	SendToGHCiStdinLn(Buffer);
 
-	PrintGhciOutput(hChildStdoutRd, STDOUT_COLOR);
+	PrintGHCiOutput(hChildStdoutRd, STDOUT_COLOR);
 
 	// clear screen, so that only one instance of the prompt is shown
 	RtfWindowClearLastLine();
-	SendToGHCIStdinLn(TEXT(""));
-	PrintGhciOutput(hChildStdoutRd, STDOUT_COLOR);
+	SendToGHCiStdinLn(TEXT(""));
+	PrintGHCiOutput(hChildStdoutRd, STDOUT_COLOR);
 
 }
 
@@ -285,9 +297,9 @@ VOID InitOptionsFont(HWND hDlg)
     SetDlgItemBool(hDlg, IDC_ChkFontItalic, cf.dwEffects & CFE_ITALIC);
     SetDlgItemInt(hDlg, IDC_TxtFontSize, TwipToPoint(cf.yHeight), FALSE);
 
-	SetDlgItemBool(hDlg, IDC_ChkRevertCAFs, GHCI_Flag_RevertCAFs);
-	SetDlgItemBool(hDlg, IDC_ChkPrintStats, GHCI_Flag_PrintStats);
-	SetDlgItemBool(hDlg, IDC_ChkPrintTypes, GHCI_Flag_PrintTypes);
+	SetDlgItemBool(hDlg, IDC_ChkRevertCAFs, GHCi_Flag_RevertCAFs);
+	SetDlgItemBool(hDlg, IDC_ChkPrintStats, GHCi_Flag_PrintStats);
+	SetDlgItemBool(hDlg, IDC_ChkPrintTypes, GHCi_Flag_PrintTypes);
 
 
     UpdateFontPreview(hDlg);
@@ -311,9 +323,9 @@ INT_PTR CALLBACK OptsDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_INITDIALOG:
 			CenterDialogInParent(hDlg);
 			InitOptionsFont(hDlg);
-			ComboInitDialog(hDlg,GHCI_Combo_Editor);
-			ComboInitDialog(hDlg,GHCI_Combo_Startup);
-			ComboInitDialog(hDlg,GHCI_Combo_Prompt);
+			ComboInitDialog(hDlg,GHCi_Combo_Editor);
+			ComboInitDialog(hDlg,GHCi_Combo_Startup);
+			ComboInitDialog(hDlg,GHCi_Combo_Prompt);
 
 			break;
 
@@ -363,14 +375,14 @@ INT_PTR CALLBACK OptsDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 VOID InitOptions(VOID)
 {
-	GHCI_Combo_Startup = NewCombo( TEXT("GHCI_STARTUP_COMBO")
-		                         , IDC_GHCI_Combo_Startup
+	GHCi_Combo_Startup = NewCombo( TEXT("GHCi_STARTUP_COMBO")
+		                         , IDC_GHCi_Combo_Startup
 								 , TEXT("ghc --interactive"));
-	GHCI_Combo_Editor = NewCombo( TEXT("GHCI_EDITOR_COMBO")
-		                        , IDC_GHCI_Combo_Editor
+	GHCi_Combo_Editor = NewCombo( TEXT("GHCi_EDITOR_COMBO")
+		                        , IDC_GHCi_Combo_Editor
 								, TEXT("&notepad"));
-	GHCI_Combo_Prompt = NewCombo( TEXT("GHCI_PROMPT_COMBO")
-		                        , IDC_GHCI_Combo_Prompt
+	GHCi_Combo_Prompt = NewCombo( TEXT("GHCi_PROMPT_COMBO")
+		                        , IDC_GHCi_Combo_Prompt
 								, TEXT("%s>"));
 	ReadOptionsFromRegistry();
 }
@@ -379,7 +391,7 @@ VOID FinalizeOptions(VOID)
 {
 	WriteOptions2Registry();
 
-	FreeCombo(GHCI_Combo_Startup);
-	FreeCombo(GHCI_Combo_Editor);
-	FreeCombo(GHCI_Combo_Prompt);
+	FreeCombo(GHCi_Combo_Startup);
+	FreeCombo(GHCi_Combo_Editor);
+	FreeCombo(GHCi_Combo_Prompt);
 }

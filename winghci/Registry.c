@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	Registry.c: functions to read and write to Windows registry
 
@@ -14,7 +14,7 @@
 #include "WndMain.h"
 
 
-LPTSTR winGhciRegRoot = TEXT("SOFTWARE\\Haskell\\WinGhci ") WINGHCI_VERSION_STRING TEXT("\\");
+LPTSTR WinGHCiRegRoot = TEXT("SOFTWARE\\Haskell\\WinGHCi ") WinGHCi_VERSION_STRING TEXT("\\");
 
 static BOOL createKey(hKey, regPath, phRootKey, samDesired)
 HKEY    hKey;
@@ -128,7 +128,7 @@ LPTSTR var;
 LPTSTR val; {
     LPTSTR realVal = ( (NULL == val) ? TEXT("") : val);
 
-    return setValue(HKEY_CURRENT_USER, winGhciRegRoot, var,
+    return setValue(HKEY_CURRENT_USER, WinGHCiRegRoot, var,
 		    REG_SZ, (LPBYTE)realVal, sizeof(TCHAR)*lstrlen(realVal)+1);
 }
 
@@ -136,7 +136,7 @@ LPTSTR val; {
 BOOL writeRegInt(var,val)         /* write LPTSTR to registry */
 LPTSTR var;                        
 INT    val; {
-    return setValue(HKEY_CURRENT_USER, winGhciRegRoot, var, 
+    return setValue(HKEY_CURRENT_USER, WinGHCiRegRoot, var, 
 		    REG_DWORD, (LPBYTE)&val, sizeof(val));
 }
 
@@ -146,11 +146,11 @@ INT    def; {
     DWORD buf;
     DWORD type;
 
-    if (queryValue(HKEY_CURRENT_USER, winGhciRegRoot, var, &type, 
+    if (queryValue(HKEY_CURRENT_USER, WinGHCiRegRoot, var, &type, 
 		   (LPBYTE)&buf, sizeof(buf))
 	&& type == REG_DWORD) {
 	return (INT)buf;
-    } else if (queryValue(HKEY_LOCAL_MACHINE, winGhciRegRoot, var, &type, 
+    } else if (queryValue(HKEY_LOCAL_MACHINE, WinGHCiRegRoot, var, &type, 
 			  (LPBYTE)&buf, sizeof(buf))
 	       && type == REG_DWORD) {
 	return (INT)buf;
@@ -161,7 +161,7 @@ INT    def; {
 
 LPTSTR readRegStrDup(LPTSTR Key, LPTSTR Default)
 {
-    return readRegString(HKEY_CURRENT_USER, winGhciRegRoot, Key, Default);
+    return readRegString(HKEY_CURRENT_USER, WinGHCiRegRoot, Key, Default);
 }
 
 VOID readRegStr(LPTSTR Key, LPTSTR Default, LPTSTR Buffer)
@@ -208,12 +208,13 @@ VOID RegistryReadWindowPos(HWND hWnd)
     INT x, y, cx, cy;
     INT Maximized = readRegInt(WINDOW_MAXIMIZED, 1);
 
+	
     if (Maximized) {
 	ShowWindow(hWnd, SW_MAXIMIZE);
 	return;
     }
 
-    x = readRegInt(WINDOW_LEFT, -1);
+	x = readRegInt(WINDOW_LEFT, -1);
     y = readRegInt(WINDOW_TOP, -1);
     cx = readRegInt(WINDOW_WIDTH, -1);
     cy = readRegInt(WINDOW_HEIGHT, -1);

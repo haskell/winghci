@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="StartGHCI"
+	Name="StartGHCi"
 	ProjectGUID="{E5CA7417-B25C-4275-8D4D-72680A609BB8}"
 	RootNamespace="StartGHCI"
 	Keyword="Win32Proj"

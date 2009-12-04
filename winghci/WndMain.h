@@ -3,7 +3,7 @@
 
 extern TCHAR LastFileLoaded[];
 
-BOOL CreateMainDialog(VOID);
+BOOL CreateWinGHCiMainWindow(INT);
 
 
 VOID FireAsyncCommand(LPCTSTR Command);
@@ -16,5 +16,4 @@ VOID AbortExecution(VOID);
 VOID LoadFile(LPTSTR FileName);
 VOID LoadFileExt(LPTSTR File, BOOL async);
 
-BOOL CreateMainDialog(VOID);
 VOID MainSize(HWND hWnd, INT x, INT y);

@@ -52,7 +52,7 @@ END
 // Accelerator
 //
 
-WINGHCIACCELERATORS ACCELERATORS 
+WinGHCiACCELERATORS ACCELERATORS 
 BEGIN
     "R",            ID_COMPILE,             VIRTKEY, CONTROL, NOINVERT
     "A",            ID_FILE_ADD,            VIRTKEY, CONTROL, NOINVERT
@@ -84,15 +84,15 @@ END
 DLG_MAIN DIALOGEX 0, 0, 500, 300
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_ACCEPTFILES | WS_EX_APPWINDOW
-CAPTION "WinGhci"
-MENU IDR_WINGHCI_MENU
+CAPTION "WinGHCi"
+MENU IDR_WinGHCi_MENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
 END
 
 DLG_ABOUT DIALOGEX 35, 24, 318, 132
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION
-CAPTION "About WinGhci"
+CAPTION "About WinGHCi"
 FONT 8, "MS Shell Dlg", 400, 0, 0x0
 BEGIN
     PUSHBUTTON      "OK",IDOK,260,110,53,16
@@ -101,7 +101,7 @@ END
 
 DLG_OPTS DIALOGEX 0, 0, 351, 226
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "WinGhci"
+CAPTION "WinGHCi"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     GROUPBOX        "Output area / Font",IDC_STATIC,7,5,337,77
@@ -112,13 +112,13 @@ BEGIN
     LTEXT           "Font size:",IDC_STATIC,14,36,32,8
     CONTROL         "Bold",IDC_ChkFontBold,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,147,36,29,10
     CONTROL         "Italic",IDC_ChkFontItalic,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,36,31,10
-    LTEXT           "GHCI Startup:",IDC_STATIC,15,101,51,10
-    COMBOBOX        IDC_GHCI_Combo_Startup,64,98,272,119,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_GHCI_Combo_Editor,43,116,293,65,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_GHCI_Combo_Prompt,43,136,293,65,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "GHCi Startup:",IDC_STATIC,15,101,51,10
+    COMBOBOX        IDC_GHCi_Combo_Startup,64,98,272,119,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_DISABLENOSCROLL | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_GHCi_Combo_Editor,43,116,293,65,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_GHCi_Combo_Prompt,43,136,293,65,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Editor:",IDC_STATIC,15,119,24,10
     CONTROL         "",IDC_RtfPreview,"RichEdit20W",0x881,13,50,325,22,WS_EX_STATICEDGE
-    GROUPBOX        "GHCI Options",IDC_STATIC,7,83,337,119
+    GROUPBOX        "GHCi Options",IDC_STATIC,7,83,337,119
     CONTROL         "Revert top-level expressions after each evaluation",IDC_ChkRevertCAFs,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,154,179,10
     CONTROL         "Print timing/memory stats after each evaluation",IDC_ChkPrintStats,
@@ -131,7 +131,7 @@ END
 
 DLG_TOOLS DIALOGEX 0, 0, 352, 129
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "WinGhci"
+CAPTION "WinGHCi"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     GROUPBOX        "Tools",-1,7,7,338,97
@@ -154,7 +154,7 @@ END
 //
 
 BMP_NORMALTOOLBAR       BITMAP                  "resources\\toolbar32.bmp"
-BMP_ABOUT               BITMAP                  "resources\\winghci.bmp"
+BMP_ABOUT               BITMAP                  "resources\\WinGHCi.bmp"
 BMP_DISABLEDTOOLBAR     BITMAP                  "resources\\toolbar32Disabled.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -164,8 +164,8 @@ BMP_DISABLEDTOOLBAR     BITMAP                  "resources\\toolbar32Disabled.bm
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-ID_WINGHCI_ICON         ICON                    "resources\\winghci.ico"
-ID_GHCI_ICON            ICON                    "resources\\ghci.ico"
+ID_WinGHCi_ICON         ICON                    "resources\\WinGHCi.ico"
+ID_GHCi_ICON            ICON                    "resources\\GHCi.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -199,7 +199,7 @@ END
 // Menu
 //
 
-IDR_WINGHCI_MENU MENU 
+IDR_WinGHCi_MENU MENU 
 BEGIN
     POPUP "&File"
     BEGIN
@@ -252,13 +252,13 @@ BEGIN
     POPUP "&Help"
     BEGIN
         MENUITEM "GHC &Documentation\tF1 ",     ID_HELPCONTENTS
-        MENUITEM "GHCI C&ommands",              ID_HELPCOMMANDS
+        MENUITEM "GHCi C&ommands",              ID_HELPCOMMANDS
         MENUITEM "&Libraries Documentation",    ID_LIBRARIES
         MENUITEM SEPARATOR
         MENUITEM "&GHC Website",                ID_WWWGHC
         MENUITEM "&Haskell Website",            ID_WWWHASKELL
         MENUITEM SEPARATOR
-        MENUITEM "&About WinGhci...",           ID_ABOUT
+        MENUITEM "&About WinGHCi...",           ID_ABOUT
     END
 END
 
@@ -271,7 +271,7 @@ END
 STRINGTABLE 
 BEGIN
     ID_NEW                  "Edit a new script file"
-    ID_EXIT                 "Exit WinGhci interpreter"
+    ID_EXIT                 "Exit WinGHCi interpreter"
     ID_MRU                  "Load recently loaded file"
     105                     "Load recently loaded file"
     106                     "Load recently loaded file"
@@ -313,13 +313,13 @@ STRINGTABLE
 BEGIN
     ID_MAKE                 "Reload files for current project"
     ID_CLEARALL             "Clear all files except prelude"
-    ID_SETOPTIONS           "Set WinGhci and GHCI interpreter options"
+    ID_SETOPTIONS           "Set WinGHCi and GHCi interpreter options"
 END
 
 STRINGTABLE 
 BEGIN
     ID_HELPCONTENTS         "Display GHC documentation"
-    ID_HELPCOMMANDS         "Summary of GHCI commands"
+    ID_HELPCOMMANDS         "Summary of GHCi commands"
     ID_LIBRARIES            "Display documentation for GHC libraries"
     ID_WWWHASKELL           "Visit the Haskell website, www.haskell.org"
     ID_WWWGHC               "Visit GHC website, www.haskell.org/ghc"
@@ -380,7 +380,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    ID_TOOLS_CONFIGURE      "Configure WinGhci tools"
+    ID_TOOLS_CONFIGURE      "Configure WinGHCi tools"
 END
 
 #endif    // Spanish resources

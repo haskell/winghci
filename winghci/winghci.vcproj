@@ -221,7 +221,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\WinGhci.c"
+				RelativePath=".\WinGHCi.c"
 				>
 			</File>
 			<File
@@ -295,7 +295,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\WinGhci.h"
+				RelativePath=".\WinGHCi.h"
 				>
 			</File>
 			<File
@@ -309,7 +309,7 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\resources\ghci.ico"
+				RelativePath=".\resources\GHCi.ico"
 				>
 			</File>
 			<File
@@ -321,15 +321,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\resources\winghci.bmp"
+				RelativePath=".\resources\WinGHCi.bmp"
 				>
 			</File>
 			<File
-				RelativePath=".\resources\winghci.ico"
+				RelativePath=".\resources\WinGHCi.ico"
 				>
 			</File>
 			<File
-				RelativePath=".\winghci.rc"
+				RelativePath=".\WinGHCi.rc"
 				>
 			</File>
 		</Filter>

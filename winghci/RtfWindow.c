@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	RftWindow.c: rich text output control
 	
@@ -17,7 +17,7 @@
 #include "Strings.h"
 #include "Utf8.h"
 #include "WndMain.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 
 
@@ -280,8 +280,7 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 			}
 		}
 
-		SetWindowLong(hDlg, DWL_MSGRESULT, (Disallow ? 1 : 0));
-		return TRUE;
+		return (Disallow ? TRUE : FALSE);
 	} else if (nmhdr->code == EN_LINK) {
 		// should really fire on up
 		// but that screws up the cursor position
@@ -297,7 +296,6 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 			SendMessage(hWndRtf, EM_GETTEXTRANGE, 0, (LPARAM) &tr);
 			ExecuteFile(Buffer);
 
-			SetWindowLong(hDlg, DWL_MSGRESULT, 1);
 			return TRUE;
 		}
 	} else if (nmhdr->code == EN_MSGFILTER) {
@@ -305,9 +303,9 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 #if 0
 		//if (mf->msg == WM_CHAR && Running) {
 		if (mf->msg == WM_CHAR && 0) {
-			WinGhciReceiveC((TCHAR)mf->wParam == TEXT('\r') ? TEXT('\n') : mf->wParam);
+			WinGHCiReceiveC((TCHAR)mf->wParam == TEXT('\r') ? TEXT('\n') : mf->wParam);
 			SetWindowLong(hDlg, DWL_MSGRESULT, 1);
-			return TRUE;
+			return FALSE;
 		} //else if (Running && mf->msg == WM_KEYDOWN) {
 		else if (0) {
 			SHORT n = GetKeyState(VK_CONTROL);
@@ -316,7 +314,7 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 				AbortExecution();
 			else
 				SetWindowLong(hDlg, DWL_MSGRESULT, 1);
-			return TRUE;
+			return FALSE;
 		} //else if (mf->msg == WM_KEYDOWN && !Running) {
 		else 
 #endif
@@ -340,9 +338,6 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 				else
 					MessageBeep((UINT)-1);
 
-
-
-				SetWindowLong(hDlg, DWL_MSGRESULT, 1);
 				return TRUE;
 
 			} else {
@@ -355,12 +350,9 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 					RtfWindowSetCommand(TEXT(""));
 					// Go to last item in history
 					AddHistory(TEXT(""));
-					SetWindowLong(hDlg, DWL_MSGRESULT, 1);
 					return TRUE;
 				} else {
-
-					SetWindowLong(hDlg, DWL_MSGRESULT, 0);
-					return TRUE;
+					return FALSE;
 				}
 			}
 
@@ -380,7 +372,6 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 				SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
 				if ((DWORD) cr.cpMin >= StartOfInput) {
 					RtfWindowRelativeHistory(mf->wParam == VK_UP ? -1 : +1);
-					SetWindowLong(hDlg, DWL_MSGRESULT, 1);
 					return TRUE;
 				}
 			} else if (mf->wParam == VK_RETURN) {
@@ -397,29 +388,24 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 				else
 					//if(!(mf->lParam & (1<<30)))
 						FireAsyncCommand(Buffer);
-
-
-				SetWindowLong(hDlg, DWL_MSGRESULT, 1);
 				return TRUE;
 			} else if (mf->wParam == VK_HOME) {
 				CHARRANGE cr;
 				SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
-				if ((DWORD) cr.cpMin > StartOfInput) {
+				if ((DWORD) cr.cpMin >= StartOfInput) {
 					SHORT n = GetKeyState(VK_SHIFT);
 					BOOL Shift = (n & (1 << 16));
 
-					SetWindowLong(hDlg, DWL_MSGRESULT, 1);
 					cr.cpMin = StartOfInput;
 					cr.cpMax = (Shift ? cr.cpMax : StartOfInput);
 					SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
-					SetWindowLong(hDlg, DWL_MSGRESULT, 1);
 					return TRUE;
 				}
 			}
 		}
 	} else if (nmhdr->code == EN_SELCHANGE) {
 		EnableButtons();
-		return TRUE;
+		return FALSE;
 	}
 
 	return FALSE;
@@ -751,8 +737,6 @@ VOID RtfWindowPutS(LPCTSTR s)
     RtfWindowPutSExt(s,StringLen(s));
 }
 
-
-
 VOID RtfEchoCommand(LPCTSTR s)
 {
     RtfWindowPutS(s);
@@ -787,7 +771,7 @@ VOID RtfWindowStartInput()
     SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 }
 
-INT winGhciColor(INT Color)
+INT WinGHCiColor(INT Color)
 {
     INT PrevColor = NowFormat.ForeColor;
     FormatChanged = TRUE;
@@ -799,7 +783,7 @@ INT winGhciColor(INT Color)
     return PrevColor;
 }
 
-BOOL winGhciBold(BOOL Bold)
+BOOL WinGHCiBold(BOOL Bold)
 {
     BOOL PrevBold = NowFormat.Bold;
     FormatChanged = TRUE;
@@ -816,7 +800,7 @@ BOOL winGhciBold(BOOL Bold)
 // IO REDIRECTORS
 /////////////////////////////////////////////////////////////////////
 
-VOID WinGhciHyperlink(LPCTSTR msg)
+VOID WinGHCiHyperlink(LPCTSTR msg)
 {
     CHARFORMAT2 cf2;
     FlushBuffer(TRUE);

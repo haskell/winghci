@@ -1,6 +1,6 @@
 /******************************************************************************
 
-	StartGHCI starts GHCI process and sends ctrl-c signals to it
+	StartGHCi starts GHCi process and sends ctrl-c signals to it
 
 	Pepe Gallardo, 2009-March
 
@@ -20,7 +20,7 @@
 { 
   switch( fdwCtrlType ) 
   { 
-    // StartGHCI process ignores CTRL-BREAK signal  
+    // StartGHCi process ignores CTRL-BREAK signal  
     case CTRL_BREAK_EVENT: 
       return TRUE; 
     default: 
@@ -68,7 +68,7 @@ INT wmain(INT argc, TCHAR *argv[], TCHAR *envp[])
 	 ZeroMemory( &si, sizeof(STARTUPINFO) );
      ZeroMemory( &pi, sizeof(PROCESS_INFORMATION) );
 
-	 // Spawn ghci process in the same process group
+	 // Spawn GHCi process in the same process group
 	 f = CreateProcess(NULL, Buffer, NULL, NULL, TRUE, 
 		 0, NULL, NULL, &si, &pi);
 
@@ -80,7 +80,7 @@ INT wmain(INT argc, TCHAR *argv[], TCHAR *envp[])
 		 h[2] = pi.hProcess;
 
 		 // Wait for the spawned-process to die or for the event
-		 // indicating that ghci should be ctrl-c'ed.
+		 // indicating that GHCi should be ctrl-c'ed.
 		 do {
 			 signal = WaitForMultipleObjects(3, h, FALSE, INFINITE);
 			 switch (signal) {
@@ -89,11 +89,11 @@ INT wmain(INT argc, TCHAR *argv[], TCHAR *envp[])
 				  ResetEvent(h[0]);
 				  break;
 
-			  case WAIT_OBJECT_0 + 1:  // Request to kill ghci process
+			  case WAIT_OBJECT_0 + 1:  // Request to kill GHCi process
 				  TerminateProcess(pi.hProcess,0);
 				  break;
 
-			  case WAIT_OBJECT_0 + 2:  // GHCI app terminated normally
+			  case WAIT_OBJECT_0 + 2:  // GHCi app terminated normally
 				  GetExitCodeProcess(pi.hProcess, &ExitCode);
 				  break;
 			 }

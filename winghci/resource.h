@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by winghci.rc
+// Used by WinGHCi.rc
 //
 #define ID_NEW                          101
 #define ID_OPEN                         102
@@ -49,14 +49,14 @@
 #define ID_WWWGHC                       505
 #define ID_ABOUT                        506
 #define BMP_NORMALTOOLBAR               1000
-#define IDR_WINGHCI_MENU                1002
+#define IDR_WinGHCi_MENU                1002
 #define IDB_BITMAP1                     1003
 #define BMP_ABOUT                       1003
 #define IDB_BITMAP2                     1004
 #define BMP_DISABLEDTOOLBAR             1004
 #define IDI_ICON1                       1005
-#define ID_WINGHCI_ICON                 1006
-#define ID_GHCI_ICON                    1007
+#define ID_WinGHCi_ICON                 1006
+#define ID_GHCi_ICON                    1007
 #define IDC_Rtf                         30000
 #define IDC_Toolbar                     30001
 #define IDC_Statusbar                   30002
@@ -69,9 +69,9 @@
 #define IDC_TxtEditor                   30015
 #define IDC_TxtFontSize2                30015
 #define IDC_LstFontFace                 30016
-#define IDC_GHCI_Combo_Editor           30017
+#define IDC_GHCi_Combo_Editor           30017
 #define IDC_LstEditor2                  30018
-#define IDC_GHCI_Combo_Startup          30018
+#define IDC_GHCi_Combo_Startup          30018
 #define DLG_MAIN                        30100
 #define DLG_ABOUT                       30101
 #define DLG_OPTS                        30102
@@ -79,14 +79,14 @@
 #define IDC_ChkRevertCAFs               30200
 #define IDC_ChkPrintStats               30201
 #define IDC_ChkPrintTypes               30202
-#define IDC_GHCI_Combo_Prompt           30203
+#define IDC_GHCi_Combo_Prompt           30203
 #define IDC_Prompt2                     30204
-#define IDC_GHCI_Startup                30204
+#define IDC_GHCi_Startup                30204
 #define IDC_LstTools                    30300
 #define IDC_Tools_Combo_Name            30301
 #define IDC_Tools_Combo_Cmd             30302
 #define IDC_Tools_Combo_Help            30303
-#define WINGHCIACCELERATORS             40000
+#define WinGHCiACCELERATORS             40000
 #define IDC_COMBO1                      40008
 
 // Next default values for new objects

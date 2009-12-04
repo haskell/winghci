@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	MruFiles.c: menu list of recently loaded files
 
@@ -12,7 +12,7 @@
 #include "resource.h"
 #include "Registry.h"
 #include "Strings.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 #define MAX_MRU  9
 

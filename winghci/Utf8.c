@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	Utf8.c: Simple Unicode Utf8 and multibyte conversion functions
 

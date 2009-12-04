@@ -1,7 +1,7 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
-	WinGhci.c: Initialization of GHCI interpreter and comunication with it
+	WinGHCi.c: Initialization of GHCi interpreter and comunication with it
 	through stdin, stdout and stderr
 	
 	Pepe Gallardo, 2009-March
@@ -18,7 +18,7 @@
 #include "Strings.h"
 #include "Utf8.h"
 #include "WndMain.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 #include <locale.h>
 
@@ -28,22 +28,21 @@
 HANDLE hChildStdinRd, hChildStdinWr, hChildStderrWr, hChildStderrRd, 
 	   hChildStdoutRd, hChildStdoutWr;
 
-HANDLE hEventCtrlBreak, hKillGHCI;
+HANDLE hEventCtrlBreak, hKillGHCi;
 
-BOOL CreateGHCIProcess(VOID); 
 VOID ErrorExit(LPTSTR); 
 
 
 HINSTANCE hThisInstance;
 
 HWND hWndMain, hWndStatus, hWndToolbar, hWndRtf;
-HANDLE hStdoutPrinterThread, hStderrPrinterThread, hReadGHCIStdoutThread; 
-HANDLE hGhciProcess, hGhciThread;
+HANDLE hStdoutPrinterThread, hStderrPrinterThread, hReadGHCiStdoutThread; 
+HANDLE hGHCiProcess, hGHCiThread;
 
 
 CRITICAL_SECTION PrinterCritSect;
 
-HANDLE hSigStopPrintGhciOutput;
+HANDLE hSigStopPrintGHCiOutput;
 
 HANDLE hSigSuspendStdoutPrinterThread, hSigStdoutPrinterThreadSuspended, hSigResumeStdoutPrinterThread;
 
@@ -57,69 +56,69 @@ HANDLE hSigSuspendStdoutPrinterThread, hSigStdoutPrinterThreadSuspended, hSigRes
 
 
 DWORD WINAPI StdoutPrinterThread( LPVOID lpParam ) ;
-BOOL isGhciOutputAvailable(HANDLE hHandle, int nTimes);
+BOOL isGHCiOutputAvailable(HANDLE hHandle, int nTimes);
 
 
-// This thread reads output sent by GHCI to stdout, and saves it on a buffer. Other threads
-// can read the buffer waiting on hSigGHCIStdoutAvailable and using ReadGHCIStdout
+// This thread reads output sent by GHCi to stdout, and saves it on a buffer. Other threads
+// can read the buffer waiting on hSigGHCiStdoutAvailable and using ReadGHCiStdout
 
-#define READ_GHCI_STDOUT_THREAD_BUFFSIZE 1024
+#define READ_GHCi_STDOUT_THREAD_BUFFSIZE 1024
 
-BYTE	ReadGHCIStdoutThreadBuff[READ_GHCI_STDOUT_THREAD_BUFFSIZE];
-INT		ReadGHCIStdoutThreadBuffLen;
-HANDLE	hSigGHCIStdoutAvailable, hSigReadGHCIStdoutThreadResume;
+BYTE	ReadGHCiStdoutThreadBuff[READ_GHCi_STDOUT_THREAD_BUFFSIZE];
+INT		ReadGHCiStdoutThreadBuffLen;
+HANDLE	hSigGHCiStdoutAvailable, hSigReadGHCiStdoutThreadResume;
 
 
-DWORD WINAPI ReadGHCIStdoutThread( LPVOID lpParam ) 
+DWORD WINAPI ReadGHCiStdoutThread( LPVOID lpParam ) 
 {
 	DWORD BytesRead;
 
-	ReadGHCIStdoutThreadBuffLen = 0;
-	hSigGHCIStdoutAvailable = CreateEvent(NULL, FALSE, FALSE, NULL);
-	hSigReadGHCIStdoutThreadResume = CreateEvent(NULL, FALSE, FALSE, NULL);
+	ReadGHCiStdoutThreadBuffLen = 0;
+	hSigGHCiStdoutAvailable = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hSigReadGHCiStdoutThreadResume = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	for(;;) {
-		if(ReadGHCIStdoutThreadBuffLen==0) {
+		if(ReadGHCiStdoutThreadBuffLen==0) {
 			//do {
-				ReadFile( hChildStdoutRd, &ReadGHCIStdoutThreadBuff[ReadGHCIStdoutThreadBuffLen]
-					    , READ_GHCI_STDOUT_THREAD_BUFFSIZE-ReadGHCIStdoutThreadBuffLen,&BytesRead, NULL);
-				ReadGHCIStdoutThreadBuffLen += BytesRead;
-			//} while(isGhciOutputAvailable(hChildStdoutRd,1000) && (ReadGHCIStdoutThreadBuffLen<READ_GHCI_STDOUT_THREAD_BUFFSIZE));
+				ReadFile( hChildStdoutRd, &ReadGHCiStdoutThreadBuff[ReadGHCiStdoutThreadBuffLen]
+					    , READ_GHCi_STDOUT_THREAD_BUFFSIZE-ReadGHCiStdoutThreadBuffLen,&BytesRead, NULL);
+				ReadGHCiStdoutThreadBuffLen += BytesRead;
+			//} while(isGHCiOutputAvailable(hChildStdoutRd,1000) && (ReadGHCiStdoutThreadBuffLen<READ_GHCi_STDOUT_THREAD_BUFFSIZE));
 			FlushFileBuffers(hChildStdoutRd);           
 		}
 		
-		SignalObjectAndWait(hSigGHCIStdoutAvailable,hSigReadGHCIStdoutThreadResume,INFINITE,FALSE);
+		SignalObjectAndWait(hSigGHCiStdoutAvailable,hSigReadGHCiStdoutThreadResume,INFINITE,FALSE);
 	}
 	return 0;
 }
 
 
 
-INT ReadGHCIStdout(BYTE *Bytes, INT BytesMaxLen)
+INT ReadGHCiStdout(BYTE *Bytes, INT BytesMaxLen)
 {
-	INT Bytes2Copy = min(BytesMaxLen,ReadGHCIStdoutThreadBuffLen);
+	INT Bytes2Copy = min(BytesMaxLen,ReadGHCiStdoutThreadBuffLen);
 
-	memmove(Bytes,ReadGHCIStdoutThreadBuff,Bytes2Copy*sizeof(BYTE));
-	ReadGHCIStdoutThreadBuffLen -= Bytes2Copy;
-	memmove(ReadGHCIStdoutThreadBuff,&ReadGHCIStdoutThreadBuff[Bytes2Copy],ReadGHCIStdoutThreadBuffLen*sizeof(BYTE));
-	SetEvent(hSigReadGHCIStdoutThreadResume);
+	memmove(Bytes,ReadGHCiStdoutThreadBuff,Bytes2Copy*sizeof(BYTE));
+	ReadGHCiStdoutThreadBuffLen -= Bytes2Copy;
+	memmove(ReadGHCiStdoutThreadBuff,&ReadGHCiStdoutThreadBuff[Bytes2Copy],ReadGHCiStdoutThreadBuffLen*sizeof(BYTE));
+	SetEvent(hSigReadGHCiStdoutThreadResume);
 	return Bytes2Copy;
 
 }
 
-BOOL isGhciOutputAvailable(HANDLE hHandle, INT nTimes);
+BOOL isGHCiOutputAvailable(HANDLE hHandle, INT nTimes);
 
-BOOL isGHCIStdoutAvailable(VOID)
+BOOL isGHCiStdoutAvailable(VOID)
 {
-	if (ReadGHCIStdoutThreadBuffLen>0)
+	if (ReadGHCiStdoutThreadBuffLen>0)
 		return TRUE;
 	else
-		return FALSE; //isGhciOutputAvailable(hChildStdoutRd,1);
+		return FALSE; //isGHCiOutputAvailable(hChildStdoutRd,1);
 
 }
 
-// StderrPrinterThread thread reads output sent by GHCI to stderr, and prints it in RED color on WinGhci window
-BOOL isGhciOutputAvailable(HANDLE hHandle, INT nTimes)
+// StderrPrinterThread thread reads output sent by GHCi to stderr, and prints it in RED color on WinGHCi window
+BOOL isGHCiOutputAvailable(HANDLE hHandle, INT nTimes)
 {
 	TCHAR Buf[BUFFER_MAXLEN];
 	DWORD Read, Available;
@@ -145,17 +144,17 @@ DWORD WINAPI StderrPrinterThread( LPVOID lpParam )
 	UnicodeBufferLen = 0;
 
 	for(;;)	{
-		// ghci sends a multibyte sequence through stdout and stderr
+		// GHCi sends a multibyte sequence through stdout and stderr
 		ReadFile(hChildStderrRd,&Bytes[BytesLen],BUFFER_MAXLEN-BytesLen,&BytesRead,NULL);
 		BytesLen += BytesRead;
 		FlushFileBuffers(hChildStderrRd);
 
-		//while(isGHCIStdoutAvailable());
+		//while(isGHCiStdoutAvailable());
 
 		EnterCriticalSection(&PrinterCritSect);
-		svColor = winGhciColor(RED);
+		svColor = WinGHCiColor(RED);
 
-		while (isGhciOutputAvailable(hChildStderrRd,1000)) {
+		while (isGHCiOutputAvailable(hChildStderrRd,1000)) {
 
 			conversionResult = LocalCodePageToUnicode(Bytes, BytesLen, &UnicodeBuffer[UnicodeBufferLen], UNICODE_BUFFER_MAXLEN-UnicodeBufferLen, &UnicodeCharsConverted);
 			UnicodeBufferLen += UnicodeCharsConverted;
@@ -191,7 +190,7 @@ DWORD WINAPI StderrPrinterThread( LPVOID lpParam )
 		RtfWindowFlushBuffer();
 		UnicodeBufferLen = 0;
 
-		winGhciColor(svColor);
+		WinGHCiColor(svColor);
 		LeaveCriticalSection(&PrinterCritSect);
 	}
 	return 0;
@@ -199,8 +198,8 @@ DWORD WINAPI StderrPrinterThread( LPVOID lpParam )
 
 
 
-// These functions are used to send data to GHCI through stdin
-VOID SendToGHCIStdinExt(LPCTSTR Str, BOOL SendNewline)
+// These functions are used to send data to GHCi through stdin
+VOID SendToGHCiStdinExt(LPCTSTR Str, BOOL SendNewline)
 {
 	#define UTF8_MAXLEN    2048 
 	BYTE Utf8Bytes[UTF8_MAXLEN];
@@ -223,20 +222,20 @@ VOID SendToGHCIStdinExt(LPCTSTR Str, BOOL SendNewline)
 }
 
 
-VOID SendToGHCIStdin(LPCTSTR Str)
+VOID SendToGHCiStdin(LPCTSTR Str)
 {
-	SendToGHCIStdinExt(Str, FALSE);
+	SendToGHCiStdinExt(Str, FALSE);
 }
 
-VOID SendToGHCIStdinLn(LPCTSTR Str)
+VOID SendToGHCiStdinLn(LPCTSTR Str)
 {
-	SendToGHCIStdinExt(Str, TRUE);
+	SendToGHCiStdinExt(Str, TRUE);
 }
 
 
-VOID PrintGhciOutput(HANDLE hHandle, INT color) 
+VOID PrintGHCiOutput(HANDLE hHandle, INT color) 
 {
-	// ghci sends a multibyte sequence through stdout and stderr
+	// GHCi sends a multibyte sequence through stdout and stderr
 	BYTE Bytes[BUFFER_MAXLEN]; 
 	INT svColor, BytesLen
 			   , BytesRead
@@ -255,8 +254,8 @@ VOID PrintGhciOutput(HANDLE hHandle, INT color)
 
 	HANDLE h[2];
 
-	h[0] = hSigStopPrintGhciOutput;
-	h[1] = hSigGHCIStdoutAvailable;
+	h[0] = hSigStopPrintGHCiOutput;
+	h[1] = hSigGHCiStdoutAvailable;
 
 
 	SwitchThread();
@@ -272,7 +271,7 @@ VOID PrintGhciOutput(HANDLE hHandle, INT color)
 				goto end; 
 				break;			
 			  case WAIT_OBJECT_0 + 1:   
-				BytesRead = ReadGHCIStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
+				BytesRead = ReadGHCiStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
 				BytesLen += BytesRead;
 				break;
 
@@ -306,13 +305,13 @@ VOID PrintGhciOutput(HANDLE hHandle, INT color)
 			EnterCriticalSection(&PrinterCritSect);
 			printing = TRUE;
 		}
-			svColor = winGhciColor(color);
+			svColor = WinGHCiColor(color);
 			// output converted TCHARS
 			RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
 			//RtfWindowFlushBuffer();
-			winGhciColor(svColor);
+			WinGHCiColor(svColor);
 			//SwitchThread();
-		if(!isGHCIStdoutAvailable()) {
+		if(!isGHCiStdoutAvailable()) {
 			printing = FALSE;
 			LeaveCriticalSection(&PrinterCritSect);
 		}
@@ -353,16 +352,16 @@ VOID PrintGhciOutput(HANDLE hHandle, INT color)
 			EnterCriticalSection(&PrinterCritSect);
 			printing = TRUE;
 		}
-			svColor = winGhciColor(PROMPT_COLOR);
-			svBold = winGhciBold(TRUE);
+			svColor = WinGHCiColor(PROMPT_COLOR);
+			svBold = WinGHCiBold(TRUE);
 			// output converted TCHARS
 			RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
 			promptShown += UnicodeBufferLen;
 			//RtfWindowFlushBuffer();
-			winGhciBold(svBold);
-			winGhciColor(svColor);
+			WinGHCiBold(svBold);
+			WinGHCiColor(svColor);
 			//SwitchThread();
-		if(!isGHCIStdoutAvailable()) {
+		if(!isGHCiStdoutAvailable()) {
 			printing = FALSE;
 			LeaveCriticalSection(&PrinterCritSect);
 		}
@@ -385,7 +384,7 @@ VOID PrintGhciOutput(HANDLE hHandle, INT color)
 				goto end; 
 				break;			
 			  case WAIT_OBJECT_0 + 1:   
-				BytesRead = ReadGHCIStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
+				BytesRead = ReadGHCiStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
 				BytesLen += BytesRead;
 				break;
 
@@ -411,11 +410,11 @@ VOID PrintGhciOutput(HANDLE hHandle, INT color)
 		EnterCriticalSection(&PrinterCritSect);
 		printing = TRUE;
 	}
-		svColor = winGhciColor(color);
+		svColor = WinGHCiColor(color);
 		// output converted TCHARS
 		RtfWindowPutSExt(TEXT(" "),1);	
 		RtfWindowPutSExt(UnicodeBufferAux,UnicodeBufferAuxLen);
-		winGhciColor(svColor);
+		WinGHCiColor(svColor);
 		//SwitchThread();
 end:		
 	RtfWindowFlushBuffer();
@@ -431,7 +430,7 @@ end:
 
 DWORD WINAPI StdoutPrinterThread( LPVOID lpParam ) 
 {
-	// ghci sends a multibyte sequence through stdout and stderr
+	// GHCi sends a multibyte sequence through stdout and stderr
 	char Bytes[BUFFER_MAXLEN]; 
 	INT svColor, svBold, BytesLen
 		       , BytesRead, conversionResult, UnicodeBufferLen, UnicodeCharsConverted;
@@ -441,7 +440,7 @@ DWORD WINAPI StdoutPrinterThread( LPVOID lpParam )
 	HANDLE h[2];    
 	DWORD signal;
 
-	h[1] = hSigGHCIStdoutAvailable;
+	h[1] = hSigGHCiStdoutAvailable;
 	h[0] = hSigSuspendStdoutPrinterThread;
 
 	BytesLen = 0;
@@ -452,7 +451,7 @@ DWORD WINAPI StdoutPrinterThread( LPVOID lpParam )
 		signal = WaitForMultipleObjects(2, h, FALSE, INFINITE);
 		switch (signal) {
 			  case WAIT_OBJECT_0 + 1:            	
-				  BytesRead = ReadGHCIStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
+				  BytesRead = ReadGHCiStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
 				  BytesLen += BytesRead;
 				  break;
 
@@ -484,15 +483,15 @@ DWORD WINAPI StdoutPrinterThread( LPVOID lpParam )
 				// print text before prompt
 				RtfWindowPutSExt(UnicodeBuffer,p-UnicodeBuffer);
 
-				svColor = winGhciColor(PROMPT_COLOR);
-				svBold = winGhciBold(TRUE);	
+				svColor = WinGHCiColor(PROMPT_COLOR);
+				svBold = WinGHCiBold(TRUE);	
 
 				p += BEGIN_OF_PROMPT_LENGTH;
 				if(p2=MemSearchString(p,rem,END_OF_PROMPT)) {
 					// print prompt
 					RtfWindowPutSExt(p,p2-p);
-					winGhciColor(svColor);
-					winGhciBold(svBold);
+					WinGHCiColor(svColor);
+					WinGHCiBold(svBold);
 					RtfWindowPutS(TEXT(" "));
 
 					p2 += END_OF_PROMPT_LENGTH;
@@ -505,8 +504,8 @@ DWORD WINAPI StdoutPrinterThread( LPVOID lpParam )
 				} else {
 					// no end of prompt found. Print all in PROMPT_COLOR and bold
 					RtfWindowPutSExt(p,rem);
-					winGhciColor(svColor);
-					winGhciBold(svBold);
+					WinGHCiColor(svColor);
+					WinGHCiBold(svBold);
 					UnicodeBufferLen = 0;
 				}
 
@@ -515,11 +514,11 @@ DWORD WINAPI StdoutPrinterThread( LPVOID lpParam )
 
 			} else {
 
-				svColor = winGhciColor(BLACK);
+				svColor = WinGHCiColor(BLACK);
 				RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
 				UnicodeBufferLen = 0;
 				RtfWindowFlushBuffer();
-				winGhciColor(svColor);
+				WinGHCiColor(svColor);
 			}
 
 			LeaveCriticalSection(&PrinterCritSect);
@@ -530,7 +529,7 @@ DWORD WINAPI StdoutPrinterThread( LPVOID lpParam )
 	return 0;
 }
 
-BOOL CreateGHCIProcess(VOID) 
+BOOL CreateGHCiProcess(LPTSTR cmd) 
 { 
 	TCHAR szCmdline[2*MAX_PATH];
 	PROCESS_INFORMATION piProcInfo; 
@@ -552,9 +551,9 @@ BOOL CreateGHCIProcess(VOID)
 
 
 	// Create the child process. 
-	wsprintf( szCmdline,TEXT("%s%s %d %d %s"), GetWinGhciInstallDir(), TEXT("StartGHCI.exe")
-		    , hEventCtrlBreak, hKillGHCI, ComboGetValue(GHCI_Combo_Startup));
-
+	wsprintf( szCmdline, TEXT("%s%s %d %d %s"), GetWinGHCiInstallDir(), TEXT("StartGHCi.exe")
+		    , hEventCtrlBreak, hKillGHCi, cmd
+			);
 
 
 	bFuncRetn = CreateProcess(NULL, 
@@ -572,42 +571,48 @@ BOOL CreateGHCIProcess(VOID)
 		ErrorExit(TEXT("CreateProcess failed\n"));
 	else 
 	{
-		//hGhciProcess = piProcInfo.hProcess;
-		//hGhciThread = piProcInfo.hThread;
-		
+		//hGHCiProcess = piProcInfo.hProcess;
+		//hGHCiThread = piProcInfo.hThread;
+		DWORD exitCode;
+
+		Sleep(1000);
+		GetExitCodeProcess(piProcInfo.hProcess, &exitCode);
+		if (exitCode!=STILL_ACTIVE)
+			bFuncRetn = FALSE;
+
 		CloseHandle(piProcInfo.hProcess);
 		CloseHandle(piProcInfo.hThread);
 	
 	}	
 
 	//Sleep(500);
-	SendOptions2GHCI();
-
+	if(bFuncRetn)
+		SendOptions2GHCi();
 
 	return bFuncRetn;
 }
 
 #define REG_DIRECTORY TEXT("WorkingDir")
 
-VOID InitializeWinGhci(VOID)
+VOID InitializeWinGHCi(VOID)
 {
 	TCHAR Buffer[MAX_PATH];
 
 	// Get from registry ghc installation dir
-	GetGhcInstallDir();
+	GetGHCinstallDir();
 
 	// Get from registry working directory, and set it
 	readRegStr(REG_DIRECTORY, TEXT(""), Buffer);
 	SetCurrentDirectory(Buffer);
 
-	// Get GHCI options
+	// Get GHCi options
 	InitOptions();
 	
 	InitTools();
 }
 
 
-VOID FinalizeWinGhci(VOID) 
+VOID FinalizeWinGHCi(VOID) 
 {
 	TCHAR Buffer[MAX_PATH];
 
@@ -647,11 +652,11 @@ INT APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
 	
 
 
-	hAccelTable = LoadAccelerators(hThisInstance, MAKEINTRESOURCE(WINGHCIACCELERATORS));
-	if(!CreateMainDialog())
+	hAccelTable = LoadAccelerators(hThisInstance, MAKEINTRESOURCE(WinGHCiACCELERATORS));
+	if(!CreateWinGHCiMainWindow(nCmdShow))
 		ErrorExit(TEXT("CreateMainDialog failed\n"));
 
-	InitializeWinGhci();
+	InitializeWinGHCi();
 
 
 
@@ -700,9 +705,9 @@ INT APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
     hEventCtrlBreak = CreateEvent(NULL, FALSE, FALSE, NULL);
 	SetHandleInformation(hEventCtrlBreak,HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
 
-	// Create Kill GHCI event
-    hKillGHCI = CreateEvent(NULL, FALSE, FALSE, NULL);
-	SetHandleInformation(hKillGHCI,HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+	// Create Kill GHCi event
+    hKillGHCi = CreateEvent(NULL, FALSE, FALSE, NULL);
+	SetHandleInformation(hKillGHCi,HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
 
 
 	// Create other events
@@ -714,7 +719,7 @@ INT APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
 
 	hSigResumeStdoutPrinterThread = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-	hSigStopPrintGhciOutput = CreateEvent(NULL, FALSE, FALSE, NULL);
+	hSigStopPrintGHCiOutput = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	//ResetEvent(hEventCtrlBreak); 
 
@@ -725,16 +730,16 @@ INT APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
 	}
 	
 
-	hReadGHCIStdoutThread = CreateThread(NULL,0,ReadGHCIStdoutThread,NULL,0,&dwPrinterThreadId);
-	if (hReadGHCIStdoutThread == NULL) 	{
-			ErrorExit(TEXT("Create ReadGHCIStdoutThread failed\n"));
+	hReadGHCiStdoutThread = CreateThread(NULL,0,ReadGHCiStdoutThread,NULL,0,&dwPrinterThreadId);
+	if (hReadGHCiStdoutThread == NULL) 	{
+			ErrorExit(TEXT("Create ReadGHCiStdoutThread failed\n"));
 	}
 
 
 	// Now create the child process. 
-	fSuccess = CreateGHCIProcess();
+	fSuccess = CreateGHCiProcess(ComboGetValue(GHCi_Combo_Startup));
 	if (! fSuccess) 
-		ErrorExit(TEXT("CreateGHCIProcess failed with"));     
+		ErrorExit(TEXT("CreateGHCiProcess failed with"));     
 	
 
 	// after initialization, start StdoutPrinterThread
@@ -759,7 +764,7 @@ INT APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
 	CloseHandle(hSigSuspendStdoutPrinterThread);
 	CloseHandle(hSigStdoutPrinterThreadSuspended);
 	CloseHandle(hSigResumeStdoutPrinterThread);
-	CloseHandle(hSigStopPrintGhciOutput);
+	CloseHandle(hSigStopPrintGHCiOutput);
 	DeleteCriticalSection(&PrinterCritSect);
 
 	return (INT) msg.wParam;
@@ -767,9 +772,9 @@ INT APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd
 
 
 #if 0
-VOID PrintGhciOutput2(HANDLE hHandle, INT color) 
+VOID PrintGHCiOutput2(HANDLE hHandle, INT color) 
 {
-	// ghci sends a multibyte sequence through stdout and stderr
+	// GHCi sends a multibyte sequence through stdout and stderr
 	BYTE Bytes[BUFFER_MAXLEN]; 
 	INT svColor, BytesLen = 0
 			   , BytesRead
@@ -786,8 +791,8 @@ VOID PrintGhciOutput2(HANDLE hHandle, INT color)
 
 	HANDLE h[2];
 
-	h[1] = hSigGHCIStdoutAvailable;
-	h[0] = hSigStopPrintGhciOutput;
+	h[1] = hSigGHCiStdoutAvailable;
+	h[0] = hSigStopPrintGHCiOutput;
 
 
 
@@ -800,7 +805,7 @@ VOID PrintGhciOutput2(HANDLE hHandle, INT color)
 		signal = WaitForMultipleObjects(2, h, FALSE, INFINITE);
 		switch (signal) {
 			case WAIT_OBJECT_0 + 1:   
-				BytesRead = ReadGHCIStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
+				BytesRead = ReadGHCiStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
 				BytesLen += BytesRead;
 				break;
 
@@ -838,13 +843,13 @@ VOID PrintGhciOutput2(HANDLE hHandle, INT color)
 			EnterCriticalSection(&PrinterCritSect);
 			printing = TRUE;
 		}
-		svColor = winGhciColor(color);
+		svColor = WinGHCiColor(color);
 		// output converted TCHARS
 		RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
 		RtfWindowFlushBuffer();
-		winGhciColor(svColor);
+		WinGHCiColor(svColor);
 		//SwitchThread();
-		if(!isGHCIStdoutAvailable()) {
+		if(!isGHCiStdoutAvailable()) {
 			printing = FALSE;
 			LeaveCriticalSection(&PrinterCritSect);
 		}
@@ -883,7 +888,7 @@ VOID PrintGhciOutput2(HANDLE hHandle, INT color)
 		signal = WaitForMultipleObjects(2, h, FALSE, INFINITE);
 		switch (signal) {
 			case WAIT_OBJECT_0 + 1:            	
-				BytesRead = ReadGHCIStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
+				BytesRead = ReadGHCiStdout(&Bytes[BytesLen], BUFFER_MAXLEN-BytesLen);
 				BytesLen += BytesRead;
 				break;
 
@@ -932,11 +937,11 @@ VOID PrintGhciOutput2(HANDLE hHandle, INT color)
 	}
 	
 	// print the prompt
-	svColor = winGhciColor(PROMPT_COLOR);
-	svBold = winGhciBold(TRUE);
+	svColor = WinGHCiColor(PROMPT_COLOR);
+	svBold = WinGHCiBold(TRUE);
 	RtfWindowPutSExt(Prompt,PromptLen);
-	winGhciBold(svBold);
-	winGhciColor(svColor);
+	WinGHCiBold(svBold);
+	WinGHCiColor(svColor);
 	RtfWindowPutSExt(TEXT(" "),1);	
 	RtfWindowFlushBuffer();
 	

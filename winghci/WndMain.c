@@ -1,7 +1,7 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
-	WndMain.c: WinGhci main dialog
+	WndMain.c: WinGHCi main dialog
 
 	Original code taken from Winhugs (http://haskell.org/hugs)
 
@@ -25,7 +25,7 @@
 #include "Toolbar.h"
 #include "Utf8.h"
 #include "WndMain.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 
 
 VOID EnableButtons(VOID);
@@ -75,7 +75,7 @@ VOID PreprocessCommand(LPCTSTR InputCommand, LPTSTR NewCommand)
 
 	
 	if (path=IsCommand(TEXT("cd"), Command)) {
-		// in case the user typed ":cd <dir>", update winghci current dir
+		// in case the user typed ":cd <dir>", update WinGHCi current dir
 		if(StringIsEmpty(path)) {
 			// get user home dir
 			SHGetFolderPath(NULL,CSIDL_PROFILE,NULL,SHGFP_TYPE_CURRENT,Buffer);
@@ -85,7 +85,6 @@ VOID PreprocessCommand(LPCTSTR InputCommand, LPTSTR NewCommand)
 		StringCpy(LastFileLoaded,TEXT("")); // no file loaded after changing dir
     
 	} else if (IsCommand(TEXT("quit"), Command)) {
-		// in case the user wants to change the prompt, add markers
 		SendMessage(hWndMain,WM_CLOSE,0,0);
 	} else if (opt=IsCommand(TEXT("set"),Command)) {
 
@@ -94,27 +93,27 @@ VOID PreprocessCommand(LPCTSTR InputCommand, LPTSTR NewCommand)
 			while(*prompt==TEXT(' ')) prompt++;
 			
 			// in case the user wants to change the prompt, add markers
-			ComboAdd(GHCI_Combo_Prompt,prompt);
-			MakeGhciPromptCommand(prompt, NewCommand, TRUE);
+			ComboAdd(GHCi_Combo_Prompt,prompt);
+			MakeGHCiPromptCommand(prompt, NewCommand, TRUE);
 		} else if (editor=StringIsPreffix(TEXT("editor "), opt)) {
-			ComboAdd(GHCI_Combo_Editor,editor);
-			MakeGhciExpandedEditorCommand(editor, NewCommand);
+			ComboAdd(GHCi_Combo_Editor,editor);
+			MakeGHCiExpandedEditorCommand(editor, NewCommand);
 		} else if (flag=StringIsPreffix(TEXT("+r"), opt)) {
-			GHCI_Flag_RevertCAFs = TRUE;
+			GHCi_Flag_RevertCAFs = TRUE;
 		} else if (flag=StringIsPreffix(TEXT("+s"), opt)) {
-			GHCI_Flag_PrintStats = TRUE;
+			GHCi_Flag_PrintStats = TRUE;
 		} else if (flag=StringIsPreffix(TEXT("+t"), opt)) {
-			GHCI_Flag_PrintTypes = TRUE;
+			GHCi_Flag_PrintTypes = TRUE;
 		}
 
 	} else if (opt=IsCommand(TEXT("unset"),Command)) {
 
 		if (flag=StringIsPreffix(TEXT("+r"), opt)) {
-			GHCI_Flag_RevertCAFs = FALSE;
+			GHCi_Flag_RevertCAFs = FALSE;
 		} else if (flag=StringIsPreffix(TEXT("+s"), opt)) {
-			GHCI_Flag_PrintStats = FALSE;
+			GHCi_Flag_PrintStats = FALSE;
 		} else if (flag=StringIsPreffix(TEXT("+t"), opt)) {
-			GHCI_Flag_PrintTypes = FALSE;
+			GHCi_Flag_PrintTypes = FALSE;
 		}
 
 	} else if (path=IsCommand(TEXT("load"),Command)) {
@@ -153,17 +152,17 @@ VOID FireCommandAux(LPCTSTR Command, BOOL WaitForResponse, BOOL startThread, BOO
 
 	if(WantPreprocess) {
 		PreprocessCommand(Command, NewCommand);
-		SendToGHCIStdinLn(NewCommand);
+		SendToGHCiStdinLn(NewCommand);
 	}
 	else
-		SendToGHCIStdinLn(Command);
+		SendToGHCiStdinLn(Command);
 
 
 	if(WaitForResponse) {
 		Running = TRUE;
 		EnableButtons();
 		
-		PrintGhciOutput(hChildStdoutRd, STDOUT_COLOR);
+		PrintGHCiOutput(hChildStdoutRd, STDOUT_COLOR);
 		
 		Running = FALSE;
 		EnableButtons();
@@ -312,10 +311,10 @@ DWORD WINAPI AbortExecutionThread(LPVOID lpParam)
 
 
 	SetEvent(hEventCtrlBreak);
-	MessageBox(hWndMain,TEXT("Interrupted"), TEXT("Winghci"), MB_ICONSTOP);
+	MessageBox(hWndMain,TEXT("Interrupted"), TEXT("WinGHCi"), MB_ICONSTOP);
 
 	while(Running && (i<MAX_TRIES)) {
-		//SetEvent(hSigStopPrintGhciOutput);
+		//SetEvent(hSigStopPrintGHCiOutput);
 		//if(!CreateThread(NULL,0,SendLn,NULL,0,&ThreadId))
 		//	ErrorExit(TEXT("CreateThread SendLn failed\n"));
 		SetEvent(hEventCtrlBreak);
@@ -326,8 +325,8 @@ DWORD WINAPI AbortExecutionThread(LPVOID lpParam)
 	
 
 	if(Running) {
-		SetEvent(hSigStopPrintGhciOutput);		
-		SendToGHCIStdinLn(TEXT(" "));	
+		SetEvent(hSigStopPrintGHCiOutput);		
+		SendToGHCiStdinLn(TEXT(" "));	
 	}
 
 	return 0;
@@ -346,7 +345,7 @@ VOID AbortExecution(VOID)
 
 #if 0
 	if(Running) {
-		SetEvent(hSigStopPrintGhciOutput);
+		SetEvent(hSigStopPrintGHCiOutput);
 		//if(!CreateThread(NULL,0,SendLn,NULL,0,&ThreadId))
 		//	ErrorExit(TEXT("CreateThread SendLn failed\n"));
 
@@ -514,18 +513,18 @@ VOID LoadFile(LPTSTR File)
 
 	RtfWindowSetCommand(TEXT(":load "));
 	StartOfInput += 6;	
-	WinGhciHyperlink(ExpandFileName(Buffer));
+	WinGHCiHyperlink(ExpandFileName(Buffer));
 	StartOfInput += StringLen(ExpandFileName(Buffer));
 	
 	RtfWindowStartOutput();
 	AddHistory(Command);
-	SendToGHCIStdinLn(Command);
+	SendToGHCiStdinLn(Command);
 
 	Running = TRUE;
 	EnableButtons();
 	
-	PrintGhciOutputIfAvailable(hChildStderrRd, STDERR_COLOR);
-	PrintGhciOutput(hChildStdoutRd, STDOUT_COLOR);
+	PrintGHCiOutputIfAvailable(hChildStderrRd, STDERR_COLOR);
+	PrintGHCiOutput(hChildStdoutRd, STDOUT_COLOR);
 	
 	Running = FALSE;
 	EnableButtons();
@@ -635,13 +634,13 @@ VOID ShowContextMenu(INT x, INT y)
 }
 
 
-VOID MainInitDialog(HWND hWnd)
+VOID MainCreate(HWND hWnd)
 {
 
 
 }
 
-INT_PTR CALLBACK MainDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg) {
 
@@ -649,8 +648,8 @@ INT_PTR CALLBACK MainDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			return MainNotify(hWnd, (LPNMHDR) lParam);
 			break;
 
-		case WM_INITDIALOG:
-			MainInitDialog(hWnd);
+		case WM_CREATE:
+			MainCreate(hWnd);
 			break;
 
 		case WM_DROPFILES:
@@ -673,6 +672,10 @@ INT_PTR CALLBACK MainDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			RtfWindowTimer();
 			break;
 
+		case WM_SETFOCUS:
+			SetFocus(hWndRtf);
+			break;
+
 		case WM_CONTEXTMENU: {
 				HWND hParam = (HWND) wParam;
 				HWND hRtfChild = GetDlgItem(hWnd, IDC_Rtf);
@@ -686,7 +689,7 @@ INT_PTR CALLBACK MainDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 
 		case WM_CLOSE:
-			FinalizeWinGhci();
+			FinalizeWinGHCi();
 
 			if (Running)
 				AbortExecution();
@@ -694,13 +697,14 @@ INT_PTR CALLBACK MainDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			FireAsyncCommand(TEXT(":quit"));
 
 			// should not be necessary
-			SetEvent(hKillGHCI);
+			SetEvent(hKillGHCi);
 
 			PostQuitMessage(0);
 			break;
+		default: return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
-	return FALSE;
+	return 0;
 }
 
 
@@ -713,17 +717,17 @@ typedef struct {
 	WPARAM wParam;
 	LPARAM lParam;
 	MSGFILTER msg;
-} MainDlgProcParams;
+} MainWndProcParams;
 
 
-DWORD WINAPI MainDlgProcThread(LPVOID lpParam)
+DWORD WINAPI MainWndProcThread(LPVOID lpParam)
 {
 	HWND hWnd;
 	UINT uMsg;
 	WPARAM wParam;
 	LPARAM lParam;
 	MSGFILTER msg;
-	MainDlgProcParams *ptr = (MainDlgProcParams *) lpParam;
+	MainWndProcParams *ptr = (MainWndProcParams *) lpParam;
 
 	hWnd = ptr->hWnd;
 	uMsg = ptr->uMsg;
@@ -733,16 +737,16 @@ DWORD WINAPI MainDlgProcThread(LPVOID lpParam)
 
 	free(ptr);
 
-	MainDlgProcAux(hWnd, uMsg, wParam, lParam, msg);
+	MainWndProcAux(hWnd, uMsg, wParam, lParam, msg);
 
 	return 0;
 
 
 }
 
-INT_PTR CALLBACK MainDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	MainDlgProcParams *ptr = malloc(sizeof(MainDlgProcParams));
+	MainWndProcParams *ptr = malloc(sizeof(MainWndProcParams));
 	DWORD ThreadId;
 
 	ptr->hWnd = hWnd;
@@ -752,33 +756,73 @@ INT_PTR CALLBACK MainDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	if(uMsg== WM_NOTIFY)
 		ptr->msg = * ((MSGFILTER*) lParam);
 
-	if(!CreateThread(NULL,0,MainDlgProcThread,ptr,0,&ThreadId))
-			ErrorExit(TEXT("CreateThread MainDlgProcThread failed\n"));
+	if(!CreateThread(NULL,0,MainWndProcThread,ptr,0,&ThreadId))
+			ErrorExit(TEXT("CreateThread MainWndProcThread failed\n"));
 	return FALSE;
 }
 #endif
 
-BOOL CreateMainDialog()
-{
-	hWndMain = CreateDialog(hThisInstance, MAKEINTRESOURCE(DLG_MAIN), NULL, &MainDlgProc);
+TCHAR WinGHCiWindowClass[] = TEXT("WinGHCiWindowClass");			
+TCHAR WinGHCiWindowTitle[] = TEXT("WinGHCi");
 
-	if (hWndMain == NULL)
+ATOM RegisterWinGHCiWindowClass(HINSTANCE hInstance)
+{
+	WNDCLASSEX wcex;
+
+	wcex.cbSize = sizeof(WNDCLASSEX);
+
+	wcex.style			= CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc	= MainWndProc;
+	wcex.cbClsExtra		= 0;
+	wcex.cbWndExtra		= 0;
+	wcex.hInstance		= hInstance;
+	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(ID_WinGHCi_ICON));
+	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
+	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+0);
+	wcex.lpszMenuName	= MAKEINTRESOURCE(IDR_WinGHCi_MENU);
+	wcex.lpszClassName	= WinGHCiWindowClass;
+	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(ID_GHCi_ICON));
+
+	return RegisterClassEx(&wcex);
+}
+
+
+
+BOOL CreateWinGHCiMainWindow(INT nCmdShow)
+{
+	//hWndMain = CreateDialog(hThisInstance, MAKEINTRESOURCE(DLG_MAIN), NULL, &MainWndProc);
+
+	
+	if (!RegisterWinGHCiWindowClass(hThisInstance) )
 	{	
-		ErrorExit(TEXT("CreateMainDialog"));
+		ErrorExit(TEXT("Could not register WinGHCiWindowClass"));
 		return FALSE;
 	}
 
+	hWndMain = CreateWindowEx(WS_EX_ACCEPTFILES,WinGHCiWindowClass, WinGHCiWindowTitle, WS_OVERLAPPEDWINDOW,
+      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hThisInstance, NULL);
+
+
+
+	if (!hWndMain)
+	{	
+		ErrorExit(TEXT("CreateWinGHCiMainWindow"));
+		return FALSE;
+	}
+
+    ShowWindow(hWndMain, nCmdShow);
+    UpdateWindow(hWndMain);
 
 	// Setup the icons
-	SendMessage(hWndMain, WM_SETICON, ICON_SMALL, (LPARAM) LoadIcon(hThisInstance, MAKEINTRESOURCE(ID_GHCI_ICON)));	
-	SendMessage(hWndMain, WM_SETICON, ICON_BIG,	(LPARAM) LoadIcon(hThisInstance, MAKEINTRESOURCE(ID_WINGHCI_ICON)));
+	SendMessage(hWndMain, WM_SETICON, ICON_SMALL, (LPARAM) LoadIcon(hThisInstance, MAKEINTRESOURCE(ID_GHCi_ICON)));	
+	SendMessage(hWndMain, WM_SETICON, ICON_BIG,	(LPARAM) LoadIcon(hThisInstance, MAKEINTRESOURCE(ID_WinGHCi_ICON)));
 
 	// Create status line
 	hWndStatus = CreateWindowEx(
 		0,                       
 		STATUSCLASSNAME,        
 		(LPCTSTR) TEXT(""),          
-		WS_CHILD |  SBARS_SIZEGRIP | WS_VISIBLE,               
+		WS_CHILD | SBARS_SIZEGRIP | WS_VISIBLE,               
 		0, 0, 0, 0,              
 		hWndMain,              
 		(HMENU) IDC_Statusbar,      
@@ -804,6 +848,7 @@ BOOL CreateMainDialog()
 	CreateToolbar();
 	InitMruFiles();
 	InitHistory();
+
 	RegistryReadWindowPos(hWndMain);
 
 

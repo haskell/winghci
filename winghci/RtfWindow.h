@@ -19,8 +19,8 @@ VOID RtfWindowSelectAll();
 VOID RtfWindowStartOutput();
 VOID RtfWindowStartInput();
 
-INT winGhciColor(INT Color);
-BOOL winGhciBold(BOOL Bold);
+INT WinGHCiColor(INT Color);
+BOOL WinGHCiBold(BOOL Bold);
 
 VOID RtfWindowUpdateFont(VOID);
 VOID RtfWindowSetCommand(LPCTSTR Command);

@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	DlgTools.c: tools dialog code
 
@@ -11,7 +11,7 @@
 #include "General.h"
 #include "Registry.h"
 #include "Strings.h"
-#include "WinGhci.h"
+#include "WinGHCi.h"
 #include "WndMain.h"
 
 
@@ -84,7 +84,7 @@ VOID ToolFireCommand(INT pos)
 		  ||
 	      StringSearchString(Tools[pos].ToolCmd,FILEEXT_KEY)
 		  )) {
-			  MessageBox(hWndMain,TEXT("No file currently loaded"),TEXT("WinGhci"),MB_OK|MB_ICONHAND);
+			  MessageBox(hWndMain,TEXT("No file currently loaded"),TEXT("WinGHCi"),MB_OK|MB_ICONHAND);
 			  return;
 	}
 

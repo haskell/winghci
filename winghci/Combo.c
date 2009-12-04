@@ -1,5 +1,5 @@
 /******************************************************************************
-	WinGhci, a GUI for GHCI
+	WinGHCi, a GUI for GHCi
 
 	Combo.c: Combo boxes that can be saved to the registry
 
@@ -163,6 +163,8 @@ LPTSTR ComboGetValue(COMBO ptr)
 	return c->History[c->HistoryLen-1];
 
 }
+
+
 
 VOID ComboUpdate(HWND hDlg, COMBO ptr)
 {
