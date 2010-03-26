@@ -182,8 +182,8 @@ VOID RegistryReadFont(CHARFORMAT* cf)
     cf->dwMask = CFM_BOLD | CFM_FACE | CFM_ITALIC | CFM_SIZE;
     cf->dwEffects = 0;
 
-    readRegStr(FONT_NAME, TEXT("Courier New"), cf->szFaceName);
-    cf->yHeight = readRegInt(FONT_SIZE, PointToTwip(10));
+    readRegStr(FONT_NAME, TEXT("Consolas"), cf->szFaceName);
+    cf->yHeight = readRegInt(FONT_SIZE, PointToTwip(11));
     if (readRegInt(FONT_WEIGHT, 0)) cf->dwEffects |= CFE_BOLD;
     if (readRegInt(FONT_ITALIC, 0)) cf->dwEffects |= CFE_ITALIC;
 }

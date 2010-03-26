@@ -154,7 +154,7 @@ DWORD WINAPI StderrPrinterThread( LPVOID lpParam )
 		EnterCriticalSection(&PrinterCritSect);
 		svColor = WinGHCiColor(RED);
 
-		while (isGHCiOutputAvailable(hChildStderrRd,1000)) {
+		while (isGHCiOutputAvailable(hChildStderrRd,5000)) {
 
 			conversionResult = LocalCodePageToUnicode(Bytes, BytesLen, &UnicodeBuffer[UnicodeBufferLen], UNICODE_BUFFER_MAXLEN-UnicodeBufferLen, &UnicodeCharsConverted);
 			UnicodeBufferLen += UnicodeCharsConverted;
@@ -167,7 +167,7 @@ DWORD WINAPI StderrPrinterThread( LPVOID lpParam )
 				BytesLen = 0;
 
 			RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
-			RtfWindowFlushBuffer();
+			RtfWindowForceFlushBuffer();
 			UnicodeBufferLen = 0;
 
 			ReadFile(hChildStderrRd,&Bytes[BytesLen],BUFFER_MAXLEN-BytesLen,&BytesRead,NULL);
@@ -187,7 +187,7 @@ DWORD WINAPI StderrPrinterThread( LPVOID lpParam )
 			BytesLen = 0;
 
 		RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
-		RtfWindowFlushBuffer();
+		RtfWindowForceFlushBuffer();
 		UnicodeBufferLen = 0;
 
 		WinGHCiColor(svColor);
@@ -308,7 +308,7 @@ VOID PrintGHCiOutput(HANDLE hHandle, INT color)
 			svColor = WinGHCiColor(color);
 			// output converted TCHARS
 			RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
-			//RtfWindowFlushBuffer();
+			RtfWindowForceFlushBuffer();
 			WinGHCiColor(svColor);
 			//SwitchThread();
 		if(!isGHCiStdoutAvailable()) {
@@ -352,12 +352,13 @@ VOID PrintGHCiOutput(HANDLE hHandle, INT color)
 			EnterCriticalSection(&PrinterCritSect);
 			printing = TRUE;
 		}
+		    RtfWindowGotoEnd();
 			svColor = WinGHCiColor(PROMPT_COLOR);
 			svBold = WinGHCiBold(TRUE);
 			// output converted TCHARS
 			RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
 			promptShown += UnicodeBufferLen;
-			//RtfWindowFlushBuffer();
+			RtfWindowForceFlushBuffer();
 			WinGHCiBold(svBold);
 			WinGHCiColor(svColor);
 			//SwitchThread();
@@ -417,7 +418,7 @@ VOID PrintGHCiOutput(HANDLE hHandle, INT color)
 		WinGHCiColor(svColor);
 		//SwitchThread();
 end:		
-	RtfWindowFlushBuffer();
+	RtfWindowForceFlushBuffer();
 	if(printing) {
 		printing = FALSE;
 		LeaveCriticalSection(&PrinterCritSect);
@@ -510,14 +511,14 @@ DWORD WINAPI StdoutPrinterThread( LPVOID lpParam )
 				}
 
 				
-				RtfWindowFlushBuffer();
+				RtfWindowForceFlushBuffer();
 
 			} else {
 
 				svColor = WinGHCiColor(BLACK);
 				RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
 				UnicodeBufferLen = 0;
-				RtfWindowFlushBuffer();
+				RtfWindowForceFlushBuffer();
 				WinGHCiColor(svColor);
 			}
 
@@ -846,7 +847,7 @@ VOID PrintGHCiOutput2(HANDLE hHandle, INT color)
 		svColor = WinGHCiColor(color);
 		// output converted TCHARS
 		RtfWindowPutSExt(UnicodeBuffer,UnicodeBufferLen);
-		RtfWindowFlushBuffer();
+		RtfWindowForceFlushBuffer();
 		WinGHCiColor(svColor);
 		//SwitchThread();
 		if(!isGHCiStdoutAvailable()) {
@@ -943,7 +944,7 @@ VOID PrintGHCiOutput2(HANDLE hHandle, INT color)
 	WinGHCiBold(svBold);
 	WinGHCiColor(svColor);
 	RtfWindowPutSExt(TEXT(" "),1);	
-	RtfWindowFlushBuffer();
+	RtfWindowForceFlushBuffer();
 	
 
 end:

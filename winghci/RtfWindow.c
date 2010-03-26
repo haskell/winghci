@@ -1,11 +1,11 @@
 /******************************************************************************
-	WinGHCi, a GUI for GHCi
+WinGHCi, a GUI for GHCi
 
-	RftWindow.c: rich text output control
-	
-	Original code taken from Winhugs (http://haskell.org/hugs)
+RftWindow.c: rich text output control
 
-	With modifications by Pepe Gallardo, 2009-March
+Original code taken from Winhugs (http://haskell.org/hugs)
+
+With modifications by Pepe Gallardo, 2009-March
 *******************************************************************************/
 
 #include "CommonIncludes.h"
@@ -35,14 +35,14 @@ BOOL Running = FALSE;
 
 BOOL PuttingChar = FALSE;
 DWORD StartOfInput = 0; // points to the start of the current input
-DWORD OutputStart;
+DWORD StartOfOutput = 0; // points to the start of the current output
 
 typedef struct _Format {
-    INT ForeColor;
-    INT BackColor;
-    BOOL Bold;
-    BOOL Italic;
-    BOOL Underline;
+	INT ForeColor;
+	INT BackColor;
+	BOOL Bold;
+	BOOL Italic;
+	BOOL Underline;
 } Format;
 
 BOOL FormatChanged = FALSE;
@@ -52,12 +52,12 @@ Format NowFormat = {BLACK, WHITE, FALSE, FALSE, FALSE};
 
 CRITICAL_SECTION CriticalSect;
 
-// let the rich edit control break words anywhere
+// let the rich edit control break words anywhere at the end of line 
 INT CALLBACK EditWordBreakProc(LPTSTR lpch,
-    INT ichCurrent,
-    INT cch,
-    INT code
-	)
+							   INT ichCurrent,
+							   INT cch,
+							   INT code
+							   )
 {
 	if(code==WB_ISDELIMITER)
 		return TRUE;
@@ -69,136 +69,140 @@ INT CALLBACK EditWordBreakProc(LPTSTR lpch,
 
 VOID RtfWindowInit(VOID)
 {
-    CHARFORMAT cf;
+	CHARFORMAT cf;
 
-    //make it all protected
-    SendMessage(hWndRtf, EM_SETEVENTMASK, 0,
-	ENM_PROTECTED | ENM_LINK | ENM_KEYEVENTS | ENM_SELCHANGE);
-    cf.cbSize = sizeof(cf);
-    cf.dwEffects = CFE_PROTECTED;
-    cf.dwMask = CFM_PROTECTED;
-    SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_ALL, (LPARAM) &cf);
+	//make it all protected
+	SendMessage(hWndRtf, EM_SETEVENTMASK, 0,
+		ENM_PROTECTED | ENM_LINK | ENM_KEYEVENTS | ENM_SELCHANGE);
+	cf.cbSize = sizeof(cf);
+	cf.dwEffects = CFE_PROTECTED;
+	cf.dwMask = CFM_PROTECTED;
+	SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_ALL, (LPARAM) &cf);
 
 	SendMessage(hWndRtf, EM_SETTEXTMODE, TM_RICHTEXT|TM_MULTICODEPAGE, (LPARAM) &cf);
 
 
-    // Allow them 1 million characters
-    // the system will sort out overflows later
-    SendMessage(hWndRtf, EM_LIMITTEXT, 1000000, 0);
+	// Allow them 1 million characters
+	// the system will sort out overflows later
+	SendMessage(hWndRtf, EM_LIMITTEXT, 1000000, 0);
 
 	// Let words break anywhere
 	SendMessage(hWndRtf,EM_SETWORDBREAKPROC,0,(LPARAM)EditWordBreakProc);
 
-    // Default formatting information
-    BufFormat = DefFormat;
-    NowFormat = DefFormat;
+	// Default formatting information
+	BufFormat = DefFormat;
+	NowFormat = DefFormat;
 
-    // And syncronisation stuff
-    InitializeCriticalSection(&CriticalSect);
+	// And syncronisation stuff
+	InitializeCriticalSection(&CriticalSect);
 
-    //update the font
-    RtfWindowUpdateFont();
+	//update the font
+	RtfWindowUpdateFont();
+
+	// Set margins
+	SendMessage(hWndRtf, EM_SETMARGINS, EC_LEFTMARGIN|EC_RIGHTMARGIN, (LPARAM)MAKELONG(4,3));
+
 }
 
 VOID RtfWindowUpdateFont(VOID)
 {
-    CHARFORMAT cf;
+	CHARFORMAT cf;
 
-    RegistryReadFont(&cf);
-    SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_ALL, (LPARAM) &cf);
+	RegistryReadFont(&cf);
+	SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_ALL, (LPARAM) &cf);
 }
 
 // get number of chars in rtf control
 INT RtfWindowTextLength()
 {
-    GETTEXTLENGTHEX gtl;
-    gtl.codepage = CP_UNICODE;
-    gtl.flags = GTL_DEFAULT;
-    return SendMessage(hWndRtf, EM_GETTEXTLENGTHEX, (WPARAM) &gtl, 0);
+	GETTEXTLENGTHEX gtl;
+	gtl.codepage = CP_UNICODE;
+	gtl.flags = GTL_DEFAULT;
+	return SendMessage(hWndRtf, EM_GETTEXTLENGTHEX, (WPARAM) &gtl, 0);
 }
 
 // return a bit mask of DROPEFFECT_NONE, DROPEFFECT_COPY, DROPEFFECT_MOVE
 INT RtfWindowCanCutCopy()
 {
-    DWORD Start, End;
-    SendMessage(hWndRtf, EM_GETSEL, (WPARAM) &Start, (WPARAM) &End);
-    if (Start == End)
+	DWORD Start, End;
+	SendMessage(hWndRtf, EM_GETSEL, (WPARAM) &Start, (WPARAM) &End);
+	if (Start == End)
 		return DROPEFFECT_NONE;
-    else if (Start >= StartOfInput)
+	else if (Start >= StartOfInput)
 		return DROPEFFECT_COPY | DROPEFFECT_MOVE;
-    else
+	else
 		return DROPEFFECT_COPY;
 }
 
 VOID RtfWindowClearLastLine()
 {
-    CHARRANGE cr;
-    INT Lines = SendMessage(hWndRtf, EM_GETLINECOUNT, 0, 0);
-    INT LastLine = SendMessage(hWndRtf, EM_LINEINDEX, Lines, 0);
+	CHARRANGE cr;
+	INT Lines = SendMessage(hWndRtf, EM_GETLINECOUNT, 0, 0);
+	INT LastLine = SendMessage(hWndRtf, EM_LINEINDEX, Lines, 0);
 	INT PrevLine = SendMessage(hWndRtf, EM_LINEINDEX, Lines-1, 0);
 
-    SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
-    SendMessage(hWndRtf, EM_SETSEL, PrevLine, LastLine);
-    PuttingChar = TRUE;
-    SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) TEXT(""));
-    PuttingChar = FALSE;
+	SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
+	SendMessage(hWndRtf, EM_SETSEL, PrevLine, LastLine);
+	PuttingChar = TRUE;
+	SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) TEXT(""));
+	PuttingChar = FALSE;
 
-    cr.cpMax -= LastLine;
-    cr.cpMin -= LastLine;
+	cr.cpMax -= LastLine;
+	cr.cpMin -= LastLine;
 
-    StartOfInput -= LastLine;
-    if (cr.cpMin < 0)
-        SendMessage(hWndRtf, EM_SETSEL, StartOfInput, StartOfInput);
-    else
+	StartOfInput -= LastLine;
+	if (cr.cpMin < 0)
+		SendMessage(hWndRtf, EM_SETSEL, StartOfInput, StartOfInput);
+	else
 		SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 }
 
 VOID RtfWindowClear()
 {
-    CHARRANGE cr;
-    INT Lines = SendMessage(hWndRtf, EM_GETLINECOUNT, 0, 0);
-    INT ThisLine = SendMessage(hWndRtf, EM_LINEINDEX, Lines-1, 0);
+	CHARRANGE cr;
+	INT Lines = SendMessage(hWndRtf, EM_GETLINECOUNT, 0, 0);
+	INT ThisLine = SendMessage(hWndRtf, EM_LINEINDEX, Lines-1, 0);
 
-    SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
-    SendMessage(hWndRtf, EM_SETSEL, 0, ThisLine);
-    PuttingChar = TRUE;
-    SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) TEXT(""));
-    PuttingChar = FALSE;
+	SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
+	SendMessage(hWndRtf, EM_SETSEL, 0, ThisLine);
+	PuttingChar = TRUE;
+	SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) TEXT(""));
+	PuttingChar = FALSE;
 
-    cr.cpMax -= ThisLine;
-    cr.cpMin -= ThisLine;
+	cr.cpMax -= ThisLine;
+	cr.cpMin -= ThisLine;
 
-    StartOfInput -= ThisLine;
-    if (cr.cpMin < 0)
-        SendMessage(hWndRtf, EM_SETSEL, StartOfInput, StartOfInput);
-    else
+	StartOfInput -= ThisLine;
+	if (cr.cpMin < 0)
+		SendMessage(hWndRtf, EM_SETSEL, StartOfInput, StartOfInput);
+	else
 		SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 }
 
 // deletes selected text
 VOID RtfWindowDelete()
 {
-    SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) "");
+	SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) "");
 }
 
 VOID RtfWindowRelativeHistory(INT Delta)
 {
-    LPCTSTR x = GoToRelativeHistory(Delta);
-    if (x == NULL)
+	LPCTSTR x = GoToRelativeHistory(Delta);
+	if (x == NULL)
 		MessageBeep((UINT)-1);
-    else
+	else
 		RtfWindowSetCommand(x);
 }
 
 VOID RtfWindowSelectAll()
 {
-    SendMessage(hWndRtf, EM_SETSEL, 0, -1);
+	SendMessage(hWndRtf, EM_SETSEL, 0, -1);
 }
 
 BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 {
 	static BOOL FindFirst = TRUE;
-	#define BUFF_LEN 2048
+#define BUFF_LEN 2048
 	static TCHAR FindWhat[BUFF_LEN];
 
 	if (nmhdr->code == EN_PROTECTED && !PuttingChar) {
@@ -319,90 +323,90 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 		else 
 #endif
 
-		
-		if (mf->msg == WM_CHAR) {
 
-			if (mf->wParam == VK_TAB) {
+			if (mf->msg == WM_CHAR) {
 
-				INT pos;
+				if (mf->wParam == VK_TAB) {
 
-				if(FindFirst) {
-					RtfWindowGetCommand(FindWhat,BUFF_LEN);
-					pos = FindFirstHistory(FindWhat);
-					FindFirst = FALSE;
-				} else
-					pos = FindNextHistory();
+					INT pos;
 
-				if(pos>=0) 
-					RtfWindowSetCommand(GoToHistory(pos));					
-				else
-					MessageBeep((UINT)-1);
+					if(FindFirst) {
+						RtfWindowGetCommand(FindWhat,BUFF_LEN);
+						pos = FindFirstHistory(FindWhat);
+						FindFirst = FALSE;
+					} else
+						pos = FindNextHistory();
 
-				return TRUE;
+					if(pos>=0) 
+						RtfWindowSetCommand(GoToHistory(pos));					
+					else
+						MessageBeep((UINT)-1);
 
-			} else {
-				// any other key resets search
-				FindFirst = TRUE;
-
-				if (mf->wParam == VK_ESCAPE) {
-
-					//Clear current command
-					RtfWindowSetCommand(TEXT(""));
-					// Go to last item in history
-					AddHistory(TEXT(""));
 					return TRUE;
+
 				} else {
-					return FALSE;
+					// any other key resets search
+					FindFirst = TRUE;
+
+					if (mf->wParam == VK_ESCAPE) {
+
+						//Clear current command
+						RtfWindowSetCommand(TEXT(""));
+						// Go to last item in history
+						AddHistory(TEXT(""));
+						return TRUE;
+					} else {
+						return FALSE;
+					}
 				}
-			}
 
 
-		} else if (mf->msg == WM_KEYDOWN) {
-			BOOL History = (mf->wParam == VK_UP || mf->wParam == VK_DOWN);
-			SHORT n = GetKeyState(VK_CONTROL);
-			BOOL Control = (n & (1 << 16));
+			} else if (mf->msg == WM_KEYDOWN) {
+				BOOL History = (mf->wParam == VK_UP || mf->wParam == VK_DOWN);
+				SHORT n = GetKeyState(VK_CONTROL);
+				BOOL Control = (n & (1 << 16));
 
-			if(((CHAR)(mf->wParam) ==(CHAR)TEXT('C')) && Control) {
-				if(RtfWindowCanCutCopy() && DROPEFFECT_COPY)
-					RtfWindowClipboard(WM_COPY);
-				else
-					AbortExecution();
-			} else if (History && (mf->lParam & (1 << 24))) {
-				CHARRANGE cr;
-				SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
-				if ((DWORD) cr.cpMin >= StartOfInput) {
-					RtfWindowRelativeHistory(mf->wParam == VK_UP ? -1 : +1);
-					return TRUE;
-				}
-			} else if (mf->wParam == VK_RETURN) {
-				#define BUFF_LEN 2048
-				TCHAR Buffer[BUFF_LEN];
+				if(((CHAR)(mf->wParam) ==(CHAR)TEXT('C')) && Control) {
+					if(RtfWindowCanCutCopy() && DROPEFFECT_COPY)
+						RtfWindowClipboard(WM_COPY);
+					else
+						AbortExecution();
+				} else if (History && (mf->lParam & (1 << 24))) {
+					CHARRANGE cr;
+					SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
+					if ((DWORD) cr.cpMin >= StartOfInput) {
+						RtfWindowRelativeHistory(mf->wParam == VK_UP ? -1 : +1);
+						return TRUE;
+					}
+				} else if (mf->wParam == VK_RETURN) {
+#define BUFF_LEN 2048
+					TCHAR Buffer[BUFF_LEN];
 
 
-				RtfWindowGetCommand(Buffer,BUFF_LEN);
+					RtfWindowGetCommand(Buffer,BUFF_LEN);
 
-				if(Running) {
-					if(!(mf->lParam & (1<<30))) //avoid repetition
-						FireCommandExt(Buffer,FALSE,TRUE,FALSE,FALSE);
-				}
-				else
-					//if(!(mf->lParam & (1<<30)))
+					if(Running) {
+						if(!(mf->lParam & (1<<30))) //avoid repetition
+							FireCommandExt(Buffer,FALSE,TRUE,FALSE,FALSE);
+					}
+					else
+						//if(!(mf->lParam & (1<<30)))
 						FireAsyncCommand(Buffer);
-				return TRUE;
-			} else if (mf->wParam == VK_HOME) {
-				CHARRANGE cr;
-				SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
-				if ((DWORD) cr.cpMin >= StartOfInput) {
-					SHORT n = GetKeyState(VK_SHIFT);
-					BOOL Shift = (n & (1 << 16));
-
-					cr.cpMin = StartOfInput;
-					cr.cpMax = (Shift ? cr.cpMax : StartOfInput);
-					SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 					return TRUE;
+				} else if (mf->wParam == VK_HOME) {
+					CHARRANGE cr;
+					SendMessage(hWndRtf, EM_EXGETSEL, 0, (LPARAM) &cr);
+					if ((DWORD) cr.cpMin >= StartOfInput) {
+						SHORT n = GetKeyState(VK_SHIFT);
+						BOOL Shift = (n & (1 << 16));
+
+						cr.cpMin = StartOfInput;
+						cr.cpMax = (Shift ? cr.cpMax : StartOfInput);
+						SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
+						return TRUE;
+					}
 				}
 			}
-		}
 	} else if (nmhdr->code == EN_SELCHANGE) {
 		EnableButtons();
 		return FALSE;
@@ -415,7 +419,7 @@ BOOL RtfNotify(HWND hDlg, NMHDR* nmhdr)
 // WM_PASTE, WM_COPY, WM_CUT
 VOID RtfWindowClipboard(UINT Msg)
 {
-    SendMessage(hWndRtf, Msg, 0, 0);
+	SendMessage(hWndRtf, Msg, 0, 0);
 }
 
 
@@ -432,6 +436,7 @@ VOID RtfWindowSetCommand(LPCTSTR Command)
 	cr.cpMax = RtfWindowTextLength();
 	if(cr.cpMin==cr.cpMax) 
 		cr.cpMax++;
+	SendMessage(hWndRtf, EM_HIDESELECTION, TRUE, 0);
 	SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 
 	stt.codepage = CP_UNICODE;
@@ -439,26 +444,27 @@ VOID RtfWindowSetCommand(LPCTSTR Command)
 	PuttingChar = TRUE;
 	SendMessage(hWndRtf,EM_SETTEXTEX,(WPARAM)&stt,(LPARAM)Command);
 #else
-    SendMessage(hWndRtf, EM_SETSEL, StartOfInput, RtfWindowTextLength());
-    PuttingChar = TRUE;
-    SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) Command); 
+	SendMessage(hWndRtf, EM_SETSEL, StartOfInput, RtfWindowTextLength());
+	PuttingChar = TRUE;
+	SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) Command); 
 #endif
-   PuttingChar = FALSE;
+	SendMessage(hWndRtf, EM_HIDESELECTION, FALSE, 0);
+	PuttingChar = FALSE;
 }
 
 VOID RtfWindowGetCommand(LPTSTR Command, INT MaxLen)
 {
-    TEXTRANGE tr;
+	TEXTRANGE tr;
 	GETTEXTEX gtt;
 
-    tr.lpstrText = Command;
-    tr.chrg.cpMin = StartOfInput;
-    tr.chrg.cpMax = RtfWindowTextLength();
+	tr.lpstrText = Command;
+	tr.chrg.cpMin = StartOfInput;
+	tr.chrg.cpMax = RtfWindowTextLength();
 
-    if (tr.chrg.cpMin == tr.chrg.cpMax)
+	if (tr.chrg.cpMin == tr.chrg.cpMax)
 		// no input
 		Command[0] = TEXT('\0');
-    else
+	else
 #if defined _UNICODE
 	{
 		CHARRANGE cr;
@@ -469,11 +475,11 @@ VOID RtfWindowGetCommand(LPTSTR Command, INT MaxLen)
 
 		gtt.cb = MaxLen;
 		gtt.flags = GT_SELECTION;
-	    gtt.codepage = CP_UNICODE;
+		gtt.codepage = CP_UNICODE;
 		gtt.lpDefaultChar = NULL;
 		gtt.lpUsedDefChar = NULL;
 		SendMessage(hWndRtf, EM_GETTEXTEX, (WPARAM)&gtt, (LPARAM) Command);
-		
+
 	}
 #else
 		SendMessage(hWndRtf, EM_GETTEXTRANGE, 0, (LPARAM) &tr);
@@ -484,34 +490,23 @@ VOID RtfWindowGetCommand(LPTSTR Command, INT MaxLen)
 // BUFFERING AND OUTPUT
 /////////////////////////////////////////////////////////////////////
 
-const INT BufSize = 995;
-TCHAR Buf[1000];
+#define MAX_BUFSIZE	1000
+const INT BufSize = MAX_BUFSIZE-5;
+TCHAR Buf[MAX_BUFSIZE];
 INT BufPos = 0; // where to write out in the buffer
 INT BufLen = 0; // how much of the buffer is useful
 INT OutputPos = 0; // how much to delete of the existing thing
-BOOL IsTimer = FALSE;
+
+INT BackSpaces = 0; // After writting '\b' characters, BackSpaces will have a negative value
+					// if next writting must start 'BackSpaces' positions before the end of the RichEdt Control
 
 // buffer to hold an escape character
 BOOL InEscBuf = FALSE;
-#define EscBufSize  100
-TCHAR EscBuf[EscBufSize];
+#define MAX_ESC_BUFSIZE  100
+TCHAR EscBuf[MAX_ESC_BUFSIZE];
 INT EscBufPos = 0;
 
-#define TIMER_ID  666
 
-VOID EnsureTimer()
-{
-    if (!IsTimer) {
-		IsTimer = TRUE;
-		SetTimer(GetParent(hWndRtf), TIMER_ID, 100, NULL);
-    }
-}
-
-VOID DestTimer()
-{
-    KillTimer(GetParent(hWndRtf), TIMER_ID);
-    IsTimer = FALSE;
-}
 
 VOID FixCharFormat(CHARFORMAT2* cf)
 {
@@ -521,68 +516,65 @@ VOID FixCharFormat(CHARFORMAT2* cf)
 		cf->dwEffects |= CFE_AUTOBACKCOLOR;
 }
 
-VOID WriteBuffer(LPCTSTR s, INT Len)
+
+// Appends to the end of the RichEdt the string s (with length Len) 
+VOID DoFlushBuffer(LPCTSTR s, INT Len)
 {
-    CHARRANGE cr;
-    CHARFORMAT2 cf;		
+	CHARRANGE cr;
+	CHARFORMAT2 cf;		
 	SETTEXTEX stt;
 
 	PuttingChar = TRUE;
-    StartOfInput = RtfWindowTextLength();
+	SendMessage(hWndRtf, EM_HIDESELECTION, TRUE, 0);
+	StartOfInput = RtfWindowTextLength() + BackSpaces;
 
+	cr.cpMin = max(StartOfOutput, StartOfInput + OutputPos); // max => do not move before the start of current output
+	cr.cpMax = cr.cpMin + Len;
+	SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 
-    cr.cpMin = max(OutputStart, StartOfInput + OutputPos);
-    cr.cpMax = cr.cpMin + BufLen;
-    SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
-
-    cf.cbSize = sizeof(cf);
-    cf.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD | CFM_ITALIC | CFM_UNDERLINE;
-    cf.dwEffects = 0;
-    cf.crTextColor = BufFormat.ForeColor;
-    cf.crBackColor = BufFormat.BackColor;
-    cf.dwEffects = (BufFormat.Bold ? CFE_BOLD : 0) |
-		   (BufFormat.Italic ? CFE_ITALIC : 0) |
-		   (BufFormat.Underline ? CFE_UNDERLINE : 0);
+	cf.cbSize = sizeof(cf);
+	cf.dwMask = CFM_COLOR | CFM_BACKCOLOR | CFM_BOLD | CFM_ITALIC | CFM_UNDERLINE;
+	cf.dwEffects = 0;
+	cf.crTextColor = BufFormat.ForeColor;
+	cf.crBackColor = BufFormat.BackColor;
+	cf.dwEffects =	(BufFormat.Bold ? CFE_BOLD : 0) |
+		(BufFormat.Italic ? CFE_ITALIC : 0) |
+		(BufFormat.Underline ? CFE_UNDERLINE : 0);
 	FixCharFormat(&cf);
-    SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
-    // setcharformat seems to screw up the current selection!
+	SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
+	// setcharformat seems to screw up the current selection!
+	SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 
-    SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
-    //PuttingChar = TRUE;
 #if defined _UNICODE
 	stt.codepage = CP_UNICODE;
 	stt.flags = ST_SELECTION;
 	// EM_SETTEXT uses '\0' as a terminator. we replace it with ' ' 
 	MemReplaceChars (s,Len,TEXT('\0'),TEXT(' '));
-	SendMessage(hWndRtf,EM_SETTEXTEX,(WPARAM)&stt,(LPARAM)s);
+	SendMessage(hWndRtf, EM_SETTEXTEX, (WPARAM)&stt, (LPARAM)s);
 #else
-    SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) s);
+	SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) s);
 #endif
-    //PuttingChar = FALSE;
 
-    StartOfInput = RtfWindowTextLength();
+	StartOfInput = RtfWindowTextLength();
 	if (StartOfInput > MAXIMUM_BUFFER) {
 		LPCTSTR Blank = TEXT("");
 		CHARRANGE cr;
 
-		SendMessage(hWndRtf, EM_HIDESELECTION, TRUE, 0);
-
 		cr.cpMin = 0;
-		cr.cpMax = (StartOfInput - MAXIMUM_BUFFER) + (MAXIMUM_BUFFER / 8);
+		cr.cpMax = (StartOfInput - MAXIMUM_BUFFER) + (MAXIMUM_BUFFER / 8); 
 		SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
 
 		PuttingChar = TRUE;
 		SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) Blank);
 		PuttingChar = FALSE;
 
-		cr.cpMin = -1;
-		cr.cpMax = -1;
-		SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
-
-		SendMessage(hWndRtf, EM_HIDESELECTION, FALSE, 0);
-
 		StartOfInput = RtfWindowTextLength();
 	}
+	cr.cpMin = -1;
+	cr.cpMax = -1;
+	SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
+
+	SendMessage(hWndRtf, EM_HIDESELECTION, FALSE, 0);
 	PuttingChar = FALSE;
 }
 
@@ -598,7 +590,9 @@ VOID FlushBuffer(BOOL Force)
 	if (BufLen != 0) {
 		Buf[BufLen] = 0;
 		Buf[BufLen+1] = 0;
-		WriteBuffer(Buf, BufLen);
+		DoFlushBuffer(Buf, BufLen);
+		// Update 'BackSpaces' for next invocation of DoFlushBuffer
+		BackSpaces = min(0, BackSpaces + OutputPos + BufLen);
 		OutputPos = BufPos - BufLen;
 		BufPos = 0;
 		BufLen = 0;
@@ -607,44 +601,43 @@ VOID FlushBuffer(BOOL Force)
 	LeaveCriticalSection(&CriticalSect);
 }
 
-VOID RtfWindowFlushBuffer(VOID)
+VOID RtfWindowForceFlushBuffer(VOID)
 {
-    FlushBuffer(TRUE);
+	FlushBuffer(TRUE);
 }
 
 BOOL ParseEscapeCode(Format* f)
 {
-    INT AnsiColor[8] = {BLACK, RED, GREEN, YELLOW, BLUE,
-			MAGENTA, CYAN, WHITE};
-    LPTSTR s;
-    INT i;
+	INT AnsiColor[8] = {BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE};
+	LPTSTR s;
+	INT i;
 
-    EscBuf[EscBufPos] = 0;
-    if (EscBuf[0] != TEXT('['))
-	return FALSE;
+	EscBuf[EscBufPos] = 0;
+	if (EscBuf[0] != TEXT('['))
+		return FALSE;
 
-    s = &EscBuf[1];
-    for (i = 1; i <= EscBufPos; i++) {
-	if (EscBuf[i] == TEXT(';'))
-	    EscBuf[i] = 0;
+	s = &EscBuf[1];
+	for (i = 1; i <= EscBufPos; i++) {
+		if (EscBuf[i] == TEXT(';'))
+			EscBuf[i] = 0;
 
-	if (EscBuf[i] == 0) {
-	    INT Val = StringToInt(s);
-	    s = &EscBuf[i+1];
+		if (EscBuf[i] == 0) {
+			INT Val = StringToInt(s);
+			s = &EscBuf[i+1];
 
-	    if (Val == 0)
-		*f = DefFormat;
-	    else if (Val == 1)
-		f->Bold = TRUE;
-	    else if (Val == 4)
-		f->Underline = TRUE;
-	    else if (Val >= 30 && Val <= 37)
-		f->ForeColor = AnsiColor[Val - 30];
-	    else if (Val >= 40 && Val <= 47)
-		f->BackColor = AnsiColor[Val - 40];
+			if (Val == 0)
+				*f = DefFormat;
+			else if (Val == 1)
+				f->Bold = TRUE;
+			else if (Val == 4)
+				f->Underline = TRUE;
+			else if (Val >= 30 && Val <= 37)
+				f->ForeColor = AnsiColor[Val - 30];
+			else if (Val >= 40 && Val <= 47)
+				f->BackColor = AnsiColor[Val - 40];
+		}
 	}
-    }
-    return TRUE;
+	return TRUE;
 }
 
 
@@ -686,7 +679,7 @@ VOID AddToBufferExt(LPCTSTR s, INT numChars)
 			} else if ((*s >= TEXT('0') && *s <= TEXT('9')) ||
 				(*s == TEXT(';')) || (*s == TEXT('['))) {
 					EscBuf[EscBufPos++] = *s;
-					EscBufPos = min(EscBufPos, EscBufSize);
+					EscBufPos = min(EscBufPos, MAX_ESC_BUFSIZE);
 			} else {
 				InEscBuf = FALSE;
 				AddToBufferExt(EscBuf,StringLen(EscBuf));
@@ -715,85 +708,87 @@ VOID AddToBufferExt(LPCTSTR s, INT numChars)
 			BufLen = max(BufLen, BufPos);
 		}
 	}
-
-	EnsureTimer();
 }
 
-VOID RtfWindowTimer(VOID)
-{
-	// if you are doing useful work, why die?
-    if (BufLen == 0)
-		DestTimer();
-    FlushBuffer(FALSE);
-}
 
 VOID RtfWindowPutSExt(LPCTSTR s, INT numChars)
 {
-    AddToBufferExt(s, numChars);
+	AddToBufferExt(s, numChars);
 }
 
 VOID RtfWindowPutS(LPCTSTR s)
 {
-    RtfWindowPutSExt(s,StringLen(s));
+	RtfWindowPutSExt(s,StringLen(s));
 }
 
 VOID RtfEchoCommand(LPCTSTR s)
 {
-    RtfWindowPutS(s);
-    RtfWindowPutS(TEXT("\n"));
+	RtfWindowPutS(s);
+	RtfWindowPutS(TEXT("\n"));
 }
 
-VOID RtfWindowStartOutput()
+// Invoked before starting printing GHCi output for a command
+VOID RtfWindowStartNextOutput()
 {
-    RtfWindowPutS(TEXT("\n"));
-    RtfWindowFlushBuffer();
-    BufFormat = DefFormat;
-    NowFormat = DefFormat;
-    OutputStart = RtfWindowTextLength();
+	RtfWindowPutS(TEXT("\n"));
+	FlushBuffer(TRUE);;
+	BufFormat = DefFormat;
+	NowFormat = DefFormat;
+	BackSpaces = 0;
+	StartOfOutput = RtfWindowTextLength();
 }
 
-VOID RtfWindowStartInput()
+VOID RtfWindowGotoEnd()
 {
-    CHARRANGE cr;
-    CHARFORMAT cf;
-    cf.cbSize = sizeof(cf);
-    cf.dwMask = CFM_COLOR;
-    cf.dwEffects = 0;
-    cf.crTextColor = BLACK;
-
-    cr.cpMin = StartOfInput;
-    cr.cpMax = -1;
-    SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
-
-    SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
-
-    cr.cpMax = cr.cpMin;
-    SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
+	BackSpaces = 0;
+	StartOfInput = RtfWindowTextLength();
 }
+
+#if 0
+// Invoked before GHCi reads command
+VOID RtfWindowStartNextInput()
+{
+	CHARRANGE cr;
+	CHARFORMAT cf;
+	cf.cbSize = sizeof(cf);
+	cf.dwMask = CFM_COLOR;
+	cf.dwEffects = 0;
+	cf.crTextColor = BLACK;
+
+	cr.cpMin = StartOfInput;
+	cr.cpMax = -1;
+	SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
+
+	SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf);
+
+	cr.cpMax = cr.cpMin;
+	SendMessage(hWndRtf, EM_EXSETSEL, 0, (LPARAM) &cr);
+}
+#endif
 
 INT WinGHCiColor(INT Color)
 {
-    INT PrevColor = NowFormat.ForeColor;
-    FormatChanged = TRUE;
-    //NowFormat = DefFormat;
-    NowFormat.ForeColor = Color;
-    // InEscBuf = FALSE;
+	INT PrevColor = NowFormat.ForeColor;
+	FormatChanged = TRUE;
+	//NowFormat = DefFormat;
+	NowFormat.ForeColor = Color;
+	// InEscBuf = FALSE;
 	UpdateFormat();
 
-    return PrevColor;
+	return PrevColor;
 }
 
 BOOL WinGHCiBold(BOOL Bold)
 {
-    BOOL PrevBold = NowFormat.Bold;
-    FormatChanged = TRUE;
-    //NowFormat = DefFormat;
-    NowFormat.Bold = Bold;
+	BOOL PrevBold = NowFormat.Bold;
+	FormatChanged = TRUE;
+	//NowFormat = DefFormat;
+	NowFormat.Bold = Bold;
 
-    // InEscBuf = FALSE;
+	// InEscBuf = FALSE;
 	UpdateFormat();
 
-    return PrevBold;
+	return PrevBold;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -802,18 +797,18 @@ BOOL WinGHCiBold(BOOL Bold)
 
 VOID WinGHCiHyperlink(LPCTSTR msg)
 {
-    CHARFORMAT2 cf2;
-    FlushBuffer(TRUE);
+	CHARFORMAT2 cf2;
+	FlushBuffer(TRUE);
 
-    cf2.cbSize = sizeof(cf2);
-    cf2.dwMask = CFM_LINK;
-    cf2.dwEffects = CFE_LINK;
+	cf2.cbSize = sizeof(cf2);
+	cf2.dwMask = CFM_LINK;
+	cf2.dwEffects = CFE_LINK;
 
-    SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf2);
-    SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) msg);
-    StartOfInput += StringLen(msg);
-    cf2.dwEffects = 0;
-    SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf2);
+	SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf2);
+	SendMessage(hWndRtf, EM_REPLACESEL, FALSE, (LPARAM) msg);
+	StartOfInput += StringLen(msg);
+	cf2.dwEffects = 0;
+	SendMessage(hWndRtf, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM) &cf2);
 }
 
 
@@ -848,7 +843,7 @@ VOID AddToBuffer(LPCTSTR s)
 			} else if ((*s >= TEXT('0') && *s <= TEXT('9')) ||
 				(*s == TEXT(';')) || (*s == TEXT('['))) {
 					EscBuf[EscBufPos++] = *s;
-					EscBufPos = min(EscBufPos, EscBufSize);
+					EscBufPos = min(EscBufPos, MAX_ESC_BUFSIZE);
 			} else {
 				InEscBuf = FALSE;
 				AddToBuffer(EscBuf);

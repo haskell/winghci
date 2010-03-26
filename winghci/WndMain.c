@@ -147,7 +147,7 @@ VOID FireCommandAux(LPCTSTR Command, BOOL WaitForResponse, BOOL startThread, BOO
 
 
 	RtfWindowSetCommand(Command);
-	RtfWindowStartOutput();
+	RtfWindowStartNextOutput();
 	AddHistory(Command);
 
 	if(WantPreprocess) {
@@ -516,7 +516,7 @@ VOID LoadFile(LPTSTR File)
 	WinGHCiHyperlink(ExpandFileName(Buffer));
 	StartOfInput += StringLen(ExpandFileName(Buffer));
 	
-	RtfWindowStartOutput();
+	RtfWindowStartNextOutput();
 	AddHistory(Command);
 	SendToGHCiStdinLn(Command);
 
@@ -666,10 +666,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		case WM_MENUSELECT:
 			MainMenuSelect(hWnd, LOWORD(wParam), HIWORD(wParam));
-			break;
-
-		case WM_TIMER:
-			RtfWindowTimer();
 			break;
 
 		case WM_SETFOCUS:
